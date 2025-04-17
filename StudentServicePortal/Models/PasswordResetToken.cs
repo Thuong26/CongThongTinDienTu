@@ -8,22 +8,25 @@ namespace StudentServicePortal.Models
     public class PasswordResetToken
     {
         [Key]
-        [Column("IDDMK")]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        [Column("MaDMK")]
+        public Guid MaDMK { get; set; }  // Mã Đổi mật khẩu (Uniqueidentifier trong SQL)
 
-        [Required]
         [Column("MaSV")]
-        public string MSSV { get; set; }
+        [StringLength(20)]  // Độ dài 20 ký tự cho Mã Sinh viên
+        public string MaSV { get; set; }  // Mã sinh viên (khóa ngoại)
 
-        [Required]
         [Column("Token")]
-        public string Token { get; set; }
+        [StringLength(100)]  // Độ dài 100 ký tự cho mã OTP
+        public string Token { get; set; }  // Mã OTP (dùng để xác thực)
 
-        [Required]
         [Column("ThoiGianHetHan")]
-        public DateTime ThoiGianHetHan { get; set; }
+        public DateTime ThoiGianHetHan { get; set; }  // Thời gian hết hạn của mã OTP
 
         [Column("SuDung")]
-        public bool SuDung { get; set; } = false;
+        public bool SuDung { get; set; }  // Token đã sử dụng hay chưa (0 hoặc 1)
+
+        // Mối quan hệ với bảng SINH_VIEN (Sinh viên)
+        [ForeignKey("MaSV")]
+        public virtual Student Student { get; set; }
     }
 }

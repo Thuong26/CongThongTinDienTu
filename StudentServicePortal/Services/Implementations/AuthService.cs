@@ -152,7 +152,7 @@ namespace StudentServicePortal.Services
 
                 var resetToken = new PasswordResetToken
                 {
-                    MSSV = student.MSSV,
+                    MaSV = student.MSSV,
                     Token = otpToken,
                     ThoiGianHetHan = DateTime.UtcNow.AddMinutes(10),
                     SuDung = false
@@ -318,7 +318,7 @@ namespace StudentServicePortal.Services
             if (tokenEntry == null)
                 throw new Exception("Token không hợp lệ hoặc đã hết hạn.");
 
-            var student = await _context.StudentLogins.FirstOrDefaultAsync(s => s.MSSV == tokenEntry.MSSV);
+            var student = await _context.StudentLogins.FirstOrDefaultAsync(s => s.MSSV == tokenEntry.MaSV);
             if (student == null)
                 throw new Exception("Không tìm thấy người dùng tương ứng với token.");
 

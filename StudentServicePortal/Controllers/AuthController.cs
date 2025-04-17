@@ -81,7 +81,8 @@ namespace StudentServicePortal.Controllers
 
             return Ok(new
             {
-                AccessToken = result.AccessToken
+                AccessToken = result.AccessToken,
+                RefreshToken = result.RefreshToken
             });
         }
 
