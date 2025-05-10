@@ -33,13 +33,5 @@ namespace StudentServicePortal.Models
         [Column("TrangThaiXuLy")]
         [StringLength(50)]  // Độ dài 50 ký tự cho TrangThaiXuLy
         public string TrangThaiXuLy { get; set; }  // Trạng thái xử lý (mặc định: 'Đang xử lý')
-
-        // Mối quan hệ với DON_DANG_KY (Đơn đăng ký)
-        [ForeignKey("MaDon")]
-        public virtual RegistrationForm RegistrationForm { get; set; }
-
-        // Mối quan hệ với SINH_VIEN (Sinh viên)
-        [ForeignKey("MaSV")]
-        public virtual Student Student { get; set; }
     }
 }

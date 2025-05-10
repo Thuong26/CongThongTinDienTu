@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
+using StudentServicePortal.Models;
 
 namespace StudentServicePortal.Repositories
 {
@@ -16,6 +17,70 @@ namespace StudentServicePortal.Repositories
         public AuthRepository(IDbConnection dbConnection)
         {
             _dbConnection = dbConnection;
+        }
+        public async Task<StudentLogin> GetUserByUsernameAsync(string username)
+        {
+            // Tìm sinh viên
+            const string sqlStudent = @"SELECT MSSV AS Username, Matkhau FROM DANG_NHAP_SV WHERE MSSV = @u";
+            var student = await _dbConnection.QuerySingleOrDefaultAsync<StudentLogin>(sqlStudent, new { u = username });
+            string userType = null;
+            if (student != null)
+            {
+                userType = "Student";
+                return student;
+            }
+
+            // Tìm cán bộ
+            const string sqlStaff = @"SELECT Username, Matkhau FROM CAN_BO WHERE Username = @u"; 
+            var staff = await _dbConnection.QuerySingleOrDefaultAsync<StudentLogin>(sqlStaff, new { u = username });
+            if (staff != null)
+            {
+                userType = "Staff";
+                return staff;
+            }
+
+            // Tìm quản lý
+            const string sqlManager = @"SELECT Username, Matkhau FROM QUAN_LY WHERE Username = @u"; 
+            var manager = await _dbConnection.QuerySingleOrDefaultAsync<StudentLogin>(sqlManager, new { u = username });
+            if (manager != null)
+            {
+                userType = "Manager";
+                return manager;
+            }
+
+            return null;
+        }
+
+        public async Task<UserInfo> GetUserInfoAsync(string username)
+        {
+            // Tìm sinh viên
+            const string sqlStudent = @"SELECT MSSV AS Username FROM DANG_NHAP_SV WHERE MSSV = @u";
+            var student = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlStudent, new { u = username });
+            if (student != null)
+            {
+                student.UserType = "Student";
+                return student;
+            }
+
+            // Tìm cán bộ
+            const string sqlStaff = @"SELECT Username FROM CAN_BO WHERE Username = @u"; 
+            var staff = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlStaff, new { u = username });
+            if (staff != null)
+            {
+                staff.UserType = "Staff";
+                return staff;
+            }
+
+            // Tìm quản lý
+            const string sqlManager = @"SELECT Username FROM QUAN_LY WHERE Username = @u"; 
+            var manager = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlManager, new { u = username });
+            if (manager != null)
+            {
+                manager.UserType = "Manager";
+                return manager;
+            }
+
+            return null;
         }
 
         public async Task<(bool, string)> ValidateUserAsync(string username, string password)

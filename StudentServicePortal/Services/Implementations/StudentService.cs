@@ -38,5 +38,10 @@ namespace StudentServicePortal.Services
         {
             await _studentRepository.DeleteStudent(mssv);
         }
+
+        public async Task<Student> GetStudentProfile(string mssv)
+        {
+            return await _studentRepository.GetStudentProfile(mssv);
+        }
     }
 }

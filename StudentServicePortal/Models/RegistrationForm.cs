@@ -36,17 +36,5 @@ namespace StudentServicePortal.Models
 
         [Column("TrangThai")]
         public bool TrangThai { get; set; }  // Trạng thái (1: Đang xử lý, 0: Hoàn thành)
-
-        // Mối quan hệ với PHONG_BAN (Phòng ban)
-        [ForeignKey("MaPB")]
-        public virtual Department? Department { get; set; }
-
-        // Mối quan hệ với CAN_BO (Cán bộ)
-        [ForeignKey("MaCB")]
-        public virtual Manager? Manager { get; set; }
-
-        // Mối quan hệ với QUAN_LY (Quản lý)
-        [ForeignKey("MaQL")]
-        public virtual Manager? Admin { get; set; }
     }
 }

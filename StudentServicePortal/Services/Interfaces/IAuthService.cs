@@ -1,4 +1,6 @@
-﻿public interface IAuthService
+﻿using System.Security.Claims;
+
+public interface IAuthService
 {
     Task<(string AccessToken, string RefreshToken)?> LoginAsync(string username, string password);
     Task<(string AccessToken, string RefreshToken)> RefreshTokenAsync(string refreshToken);
@@ -6,5 +8,6 @@
     Task<string?> GeneratePasswordResetTokenAsync(string email);
     Task<string?> ValidateOtpToken(string otpToken);
     Task<string?> GetEmailFromOtpToken(string otpToken);
-    Task<bool> ResetPasswordAsync(string otpToken, string newPassword);
+    Task<bool> ResetPasswordAsync(string newPassword);
+    Task<bool> VerifyOtpTokenAsync(string token);
 }

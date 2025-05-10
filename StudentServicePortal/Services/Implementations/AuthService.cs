@@ -13,6 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using StudentServicePortal.Configurations;
 using StudentServicePortal.Data;
 using StudentServicePortal.Models;
+using StudentServicePortal.Repositories;
 using StudentServicePortal.Services.Interfaces;
 
 
@@ -25,12 +26,13 @@ namespace StudentServicePortal.Services
         private readonly IConfiguration _configuration;
         private readonly IEmailService _emailService;
         private readonly JwtSettings _jwtSettings;
-
-        public AuthService(StudentPortalDbContext context, IConfiguration configuration, IOptions<JwtSettings> jwtOptions)
+        private readonly IAuthRepository _repo;
+        public AuthService(StudentPortalDbContext context, IConfiguration configuration, IOptions<JwtSettings> jwtOptions, IAuthRepository repo)
         {
             _context = context;
             _configuration = configuration;
             _jwtSettings = jwtOptions.Value;
+            _repo = repo;
         }
 
         public async Task<(string AccessToken, string RefreshToken)?> LoginAsync(string username, string password)
@@ -220,6 +222,8 @@ namespace StudentServicePortal.Services
                 new Claim(JwtRegisteredClaimNames.Sub, username),
                 new Claim(ClaimTypes.Name, username),
                 new Claim("UserType", userType),
+                new Claim(ClaimTypes.Role, userType),
+                new Claim("MSSV", username),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
             };
@@ -307,20 +311,21 @@ namespace StudentServicePortal.Services
                    password.Any(c => "!@#$%^&*()-_=+[]{};:'\",.<>?/".Contains(c));
         }
 
-        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        public async Task<bool> ResetPasswordAsync(string newPassword)
         {
             if (!IsValidPassword(newPassword))
                 throw new Exception("Mật khẩu không đủ mạnh.");
 
+            // Get the verified token from the session
             var tokenEntry = await _context.PasswordResetTokens
-                .FirstOrDefaultAsync(t => t.Token == token && !t.SuDung && t.ThoiGianHetHan > DateTime.UtcNow);
+                .FirstOrDefaultAsync(t => !t.SuDung && t.ThoiGianHetHan > DateTime.UtcNow);
 
             if (tokenEntry == null)
-                throw new Exception("Token không hợp lệ hoặc đã hết hạn.");
+                throw new Exception("Phiên đặt lại mật khẩu đã hết hạn. Vui lòng thử lại.");
 
             var student = await _context.StudentLogins.FirstOrDefaultAsync(s => s.MSSV == tokenEntry.MaSV);
             if (student == null)
-                throw new Exception("Không tìm thấy người dùng tương ứng với token.");
+                throw new Exception("Không tìm thấy người dùng.");
 
             var hashedPassword = HashPassword(newPassword);
 
@@ -332,6 +337,24 @@ namespace StudentServicePortal.Services
             return true;
         }
 
+        public async Task<bool> VerifyOtpTokenAsync(string token)
+        {
+            try
+            {
+                var tokenEntry = await _context.PasswordResetTokens
+                    .FirstOrDefaultAsync(t => t.Token == token && !t.SuDung && t.ThoiGianHetHan > DateTime.UtcNow);
+
+                if (tokenEntry == null)
+                    return false;
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi trong VerifyOtpTokenAsync: {ex}");
+                return false;
+            }
+        }
 
         public Task<string> GeneratePasswordResetToken(string email)
         {

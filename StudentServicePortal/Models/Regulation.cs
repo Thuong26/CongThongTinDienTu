@@ -48,12 +48,6 @@ namespace StudentServicePortal.Models
         [Column("ThoiGianDang")]
         public DateTime ThoiGianDang { get; set; }  // Thời điểm đăng
 
-        // Mối quan hệ với CAN_BO (Cán bộ)
-        [ForeignKey("MaCB")]
-        public virtual Manager? Manager { get; set; }
-
-        // Mối quan hệ với PHONG_BAN (Phòng ban)
-        [ForeignKey("MaPB")]
-        public virtual Department? Department { get; set; }
+        
     }
 }

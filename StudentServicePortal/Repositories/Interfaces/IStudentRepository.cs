@@ -8,6 +8,8 @@ namespace StudentServicePortal.Repositories
     {
         Task<IEnumerable<Student>> GetAllStudents();
         Task<Student> GetStudentById(string mssv);
+
+        Task<Student> GetStudentProfile(string mssv);
         Task AddStudent(Student student);
         Task UpdateStudent(Student student);
         Task DeleteStudent(string mssv);

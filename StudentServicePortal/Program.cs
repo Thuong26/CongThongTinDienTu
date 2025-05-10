@@ -15,6 +15,8 @@ using System.Text;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using StudentServicePortal.Repositories.Interfaces;
+using StudentServicePortal.Repositories.Implementations;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +54,24 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddTransient<IRegistrationFormRepository, RegistrationFormRepository>();
+builder.Services.AddTransient<IRegistrationFormService, RegistrationFormService>();
+builder.Services.AddScoped<IFormRepository, FormRepository>();
+builder.Services.AddScoped<IFormService, FormService>();
+builder.Services.AddScoped<IRegulationRepository, RegulationRepository>();
+builder.Services.AddScoped<IRegulationService, RegulationService>();
+builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IRegistrationDetailRepository, RegistrationDetailRepository>();
+builder.Services.AddScoped<IRegistrationDetailService, RegistrationDetailService>();
+builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+
 
 // Cấu hình JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -78,6 +98,7 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero,
         ValidIssuer = jwtSettings.Issuer,
         ValidAudience = jwtSettings.Audience,
+        RoleClaimType = "role",
         NameClaimType = JwtRegisteredClaimNames.Sub
     };
 
@@ -144,6 +165,18 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowNgrok", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:3000",
+            "https://8936-123-19-224-121.ngrok-free.app/"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -152,6 +185,8 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // CORS
 app.UseCors("AllowAll");
+
+app.UseCors("AllowNgrok");
 
 // Swagger
 if (app.Environment.IsDevelopment())
