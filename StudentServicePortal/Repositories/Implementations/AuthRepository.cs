@@ -50,42 +50,9 @@ namespace StudentServicePortal.Repositories
 
             return null;
         }
-
-        public async Task<UserInfo> GetUserInfoAsync(string username)
-        {
-            // Tìm sinh viên
-            const string sqlStudent = @"SELECT MSSV AS Username FROM DANG_NHAP_SV WHERE MSSV = @u";
-            var student = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlStudent, new { u = username });
-            if (student != null)
-            {
-                student.UserType = "Student";
-                return student;
-            }
-
-            // Tìm cán bộ
-            const string sqlStaff = @"SELECT Username FROM CAN_BO WHERE Username = @u"; 
-            var staff = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlStaff, new { u = username });
-            if (staff != null)
-            {
-                staff.UserType = "Staff";
-                return staff;
-            }
-
-            // Tìm quản lý
-            const string sqlManager = @"SELECT Username FROM QUAN_LY WHERE Username = @u"; 
-            var manager = await _dbConnection.QuerySingleOrDefaultAsync<UserInfo>(sqlManager, new { u = username });
-            if (manager != null)
-            {
-                manager.UserType = "Manager";
-                return manager;
-            }
-
-            return null;
-        }
-
         public async Task<(bool, string)> ValidateUserAsync(string username, string password)
         {
-            var hashedPassword = HashPassword(password); // ✅ Hash mật khẩu nhập vào
+            var hashedPassword = HashPassword(password); 
 
             string sql = @"
                         SELECT COUNT(*) 
@@ -111,7 +78,7 @@ namespace StudentServicePortal.Repositories
             {
                 byte[] bytes = Encoding.UTF8.GetBytes(password);
                 byte[] hash = sha256.ComputeHash(bytes);
-                return BitConverter.ToString(hash).Replace("-", "").ToLower(); // Chuyển sang dạng hex
+                return BitConverter.ToString(hash).Replace("-", "").ToLower(); 
             }
         }
 

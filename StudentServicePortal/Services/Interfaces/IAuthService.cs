@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using StudentServicePortal.Models;
 
 public interface IAuthService
 {
@@ -10,4 +11,5 @@ public interface IAuthService
     Task<string?> GetEmailFromOtpToken(string otpToken);
     Task<bool> ResetPasswordAsync(string newPassword);
     Task<bool> VerifyOtpTokenAsync(string token);
+    Task<UserInfo?> GetUserInfoAsync(string username);
 }

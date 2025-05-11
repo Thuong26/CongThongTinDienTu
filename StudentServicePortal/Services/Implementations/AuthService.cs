@@ -370,5 +370,33 @@ namespace StudentServicePortal.Services
         {
             throw new NotImplementedException();
         }
+
+        public async Task<UserInfo?> GetUserInfoAsync(string username)
+        {
+            var user = await GetUserByUsernameAsync(username);
+            if (user == null) return null;
+
+            string userType = null;
+            if (user is StudentLogin student)
+            {
+                userType = "Student";
+            }
+            else if (user is Staff staff)
+            {
+                userType = "Staff";
+            }
+            else if (user is Manager manager)
+            {
+                userType = "Manager";
+            }
+
+            if (userType == null) return null;
+
+            return new UserInfo
+            {
+                Username = username,
+                UserType = userType
+            };
+        }
     }
 }

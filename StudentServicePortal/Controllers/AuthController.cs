@@ -7,7 +7,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using Swashbuckle.AspNetCore.Annotations;
 using System.Security.Claims;
-using StudentServicePortal.Repositories;
 
 namespace StudentServicePortal.Controllers
 {
@@ -17,53 +16,11 @@ namespace StudentServicePortal.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IEmailService _emailService;
-        private readonly IAuthRepository _authRepository;
 
-        public AuthController(IAuthService authService, IEmailService emailService, IAuthRepository authRepository)
+        public AuthController(IAuthService authService, IEmailService emailService)
         {
             _authService = authService;
             _emailService = emailService;
-            _authRepository = authRepository;
-        }
-
-        [HttpGet("user-info")]
-        [Authorize]
-        [SwaggerOperation(Summary = "Lấy thông tin user", Description = "Lấy thông tin username và usertype của user đang đăng nhập")]
-        [SwaggerResponse(200, "Lấy thông tin thành công", typeof(ApiResponse<UserInfo>))]
-        [SwaggerResponse(401, "Không xác định được người dùng", typeof(ApiResponse<object>))]
-        [SwaggerResponse(404, "Không tìm thấy user", typeof(ApiResponse<object>))]
-        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<IActionResult> GetUserInfo()
-        {
-            var username = User.Identity?.Name;
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                return Unauthorized(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Không xác định được người dùng",
-                    StatusCode = 401
-                });
-            }
-
-            var userInfo = await _authRepository.GetUserInfoAsync(username);
-            if (userInfo == null)
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    Success = false,
-                    Message = "Không tìm thấy user",
-                    StatusCode = 404
-                });
-            }
-
-            return Ok(new ApiResponse<UserInfo>
-            {
-                Success = true,
-                Message = "Lấy thông tin user thành công",
-                Data = userInfo,
-                StatusCode = 200
-            });
         }
 
         [HttpPost("login")]
@@ -320,6 +277,40 @@ namespace StudentServicePortal.Controllers
                     StatusCode = 500
                 });
             }
+        }
+
+        [HttpGet("user/profile")]
+        [Authorize]
+        [SwaggerOperation(Summary = "Lấy thông tin người dùng hiện tại", Description = "Lấy thông tin username và loại người dùng (Student/Staff/Manager) của tài khoản đang đăng nhập")]
+        [SwaggerResponse(200, "Lấy thông tin thành công", typeof(ApiResponse<UserInfo>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy người dùng", typeof(ApiResponse<object>))]
+        public async Task<IActionResult> GetUserProfile()
+        {
+            var username = User.Identity?.Name;
+            if (string.IsNullOrEmpty(username))
+                return Unauthorized(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Không xác định được người dùng",
+                    StatusCode = 401
+                });
+
+            var userInfo = await _authService.GetUserInfoAsync(username);
+            if (userInfo == null)
+                return NotFound(new ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "Không tìm thấy người dùng",
+                    StatusCode = 404
+                });
+
+            return Ok(new ApiResponse<UserInfo>
+            {
+                Success = true,
+                Data = userInfo,
+                StatusCode = 200
+            });
         }
     }
 }
