@@ -70,8 +70,9 @@ builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
-
-
+// Đăng ký Introduction Repository và Service
+builder.Services.AddScoped<IIntroductionRepository, IntroductionRepository>();
+builder.Services.AddScoped<IIntroductionService, IntroductionService>();
 
 // Cấu hình JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -169,33 +170,28 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNgrok", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:3000",
-            "https://8936-123-19-224-121.ngrok-free.app/"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy
+            .SetIsOriginAllowed(origin =>
+                origin == "http://localhost:3000" || 
+                origin.Contains(".ngrok-free.app"))
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Middleware xử lý lỗi toàn cục
-app.UseMiddleware<ErrorHandlingMiddleware>();
-
-// CORS
-app.UseCors("AllowAll");
-
 app.UseCors("AllowNgrok");
 
-// Swagger
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// HTTPS và xác thực
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
