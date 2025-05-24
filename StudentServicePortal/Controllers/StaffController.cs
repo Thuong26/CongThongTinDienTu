@@ -6,6 +6,7 @@ using StudentServicePortal.Services.Interfaces;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace StudentServicePortal.Controllers
 {
@@ -28,6 +29,10 @@ namespace StudentServicePortal.Controllers
         }
 
         [HttpGet("profile")]
+        [SwaggerOperation(Summary = "Lấy thông tin cán bộ", Description = "API trả về thông tin chi tiết của cán bộ đang đăng nhập")]
+        [SwaggerResponse(200, "Lấy thông tin thành công", typeof(ApiResponse<StaffDTO>))]
+        [SwaggerResponse(404, "Không tìm thấy thông tin cán bộ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<StaffDTO>>> GetProfile()
         {
             try
@@ -50,6 +55,9 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("forms")]
+        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chờ xử lý", Description = "API trả về danh sách các đơn đăng ký đang chờ cán bộ xử lý")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetPendingForms()
         {
             try
@@ -68,6 +76,11 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("forms/{maDon}")]
+        [SwaggerOperation(Summary = "Lấy chi tiết đơn đăng ký theo mã đơn", Description = "API trả về chi tiết các mục trong đơn đăng ký dựa trên mã đơn cung cấp")]
+        [SwaggerResponse(200, "Lấy chi tiết thành công", typeof(ApiResponse<IEnumerable<RegistrationDetail>>))]
+        [SwaggerResponse(400, "Mã đơn không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy chi tiết đơn", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetail>>>> GetRegistrationDetails(string maDon)
         {
             if (string.IsNullOrEmpty(maDon))
@@ -91,6 +104,11 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("forms/{maDon}/status")]
+        [SwaggerOperation(Summary = "Cập nhật trạng thái đơn đăng ký", Description = "API cho phép cán bộ cập nhật trạng thái xử lý của đơn đăng ký")]
+        [SwaggerResponse(200, "Cập nhật trạng thái thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy đơn đăng ký", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> UpdateFormStatus(string maDon, [FromBody] UpdateFormStatusRequest request)
         {
             if (string.IsNullOrEmpty(maDon))
@@ -119,6 +137,10 @@ namespace StudentServicePortal.Controllers
         }
 
         [HttpPost("templates")]
+        [SwaggerOperation(Summary = "Tạo mới biểu mẫu", Description = "API cho phép cán bộ tạo mới một biểu mẫu đăng ký")]
+        [SwaggerResponse(200, "Tạo biểu mẫu thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> CreateForm([FromBody] Form form)
         {
             try
@@ -146,6 +168,11 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("templates/{maBM}")]
+        [SwaggerOperation(Summary = "Cập nhật biểu mẫu", Description = "API cho phép cán bộ cập nhật thông tin một biểu mẫu đăng ký")]
+        [SwaggerResponse(200, "Cập nhật biểu mẫu thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy biểu mẫu", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> UpdateForm(string maBM, [FromBody] Form form)
         {
             if (string.IsNullOrEmpty(maBM))
@@ -174,6 +201,10 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPost]
+        [SwaggerOperation(Summary = "Tạo mới quy định", Description = "API cho phép cán bộ tạo mới một quy định")]
+        [SwaggerResponse(200, "Tạo quy định thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> CreateRegulation([FromBody] Regulation regulation)
         {
             try
@@ -203,6 +234,11 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("{maQD}")]
+        [SwaggerOperation(Summary = "Cập nhật quy định", Description = "API cho phép cán bộ cập nhật thông tin một quy định")]
+        [SwaggerResponse(200, "Cập nhật quy định thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy quy định", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> UpdateRegulation(string maQD, [FromBody] Regulation regulation)
         {
             if (string.IsNullOrEmpty(maQD))

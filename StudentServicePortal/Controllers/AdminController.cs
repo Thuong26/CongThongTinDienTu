@@ -6,6 +6,7 @@ using StudentServicePortal.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace StudentServicePortal.Controllers
 {
@@ -33,13 +34,16 @@ namespace StudentServicePortal.Controllers
         //}
 
         [HttpGet("departments")]
+        [SwaggerOperation(Summary = "Lấy danh sách phòng ban", Description = "API trả về danh sách tất cả các phòng ban trong hệ thống")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<Department>>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<Department>>>> GetDepartments()
         {
             try
-        {
-            var departments = await _departmentService.GetAllDepartmentsAsync();
-                return ApiResponse(departments);
-        }
+            {
+                var departments = await _departmentService.GetAllDepartmentsAsync();
+                return ApiResponse(departments, "Lấy danh sách phòng ban thành công");
+            }
             catch (Exception)
             {
                 return ApiResponse<IEnumerable<Department>>(null, "Lỗi hệ thống", 500, false);
@@ -47,13 +51,16 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("staff")]
+        [SwaggerOperation(Summary = "Lấy danh sách cán bộ", Description = "API trả về danh sách tất cả các cán bộ trong hệ thống")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<StaffDTO>>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<StaffDTO>>>> GetStaff()
         {
             try
-        {
-            var staffList = await _staffService.GetAllStaffAsync();
-                return ApiResponse(staffList);
-        }
+            {
+                var staffList = await _staffService.GetAllStaffAsync();
+                return ApiResponse(staffList, "Lấy danh sách cán bộ thành công");
+            }
             catch (Exception)
             {
                 return ApiResponse<IEnumerable<StaffDTO>>(null, "Lỗi hệ thống", 500, false);
@@ -61,6 +68,10 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPost("staff")]
+        [SwaggerOperation(Summary = "Tạo mới cán bộ", Description = "API cho phép quản lý tạo mới một cán bộ")]
+        [SwaggerResponse(200, "Thêm cán bộ thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> CreateStaff([FromBody] Staff staff)
         {
             try
@@ -81,6 +92,11 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("staff/{msCB}")]
+        [SwaggerOperation(Summary = "Cập nhật thông tin cán bộ", Description = "API cho phép quản lý cập nhật thông tin một cán bộ")]
+        [SwaggerResponse(200, "Cập nhật cán bộ thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy cán bộ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<string>>> UpdateStaff(string msCB, [FromBody] Staff staff)
         {
             try
@@ -101,13 +117,16 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("reports")]
+        [SwaggerOperation(Summary = "Lấy danh sách báo cáo", Description = "API trả về danh sách các báo cáo tổng hợp trong hệ thống")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<ReportDTO>>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<ReportDTO>>>> GetReports()
         {
             try
-        {
-            var reports = await _reportService.GetReportsAsync();
-                return ApiResponse(reports);
-        }
+            {
+                var reports = await _reportService.GetReportsAsync();
+                return ApiResponse(reports, "Lấy danh sách báo cáo thành công");
+            }
             catch (Exception)
             {
                 return ApiResponse<IEnumerable<ReportDTO>>(null, "Lỗi hệ thống", 500, false);
@@ -116,6 +135,9 @@ namespace StudentServicePortal.Controllers
         
         // Special case for file download - keeping as is
         [HttpPost("reports/export")]
+        [SwaggerOperation(Summary = "Xuất báo cáo ra file Excel", Description = "API cho phép quản lý xuất danh sách báo cáo ra file Excel để tải về")]
+        [SwaggerResponse(200, "Xuất file thành công", typeof(FileContentResult))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<IActionResult> ExportReports()
         {
             try

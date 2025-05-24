@@ -6,8 +6,5 @@ namespace StudentServicePortal.Services.Interfaces
     {
         Task<IEnumerable<RegistrationDetail>> GetDetailsByFormIdAsync(string maDon);
         Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus);
-
-        Task<RegistrationDetail> CreateAsync(RegistrationDetail detail);
-        Task<RegistrationDetail> GetByIdAsync(string maDonCT);
     }
 }

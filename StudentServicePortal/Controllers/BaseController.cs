@@ -9,24 +9,12 @@ namespace StudentServicePortal.Controllers
     {
         protected ActionResult<ApiResponse<T>> ApiResponse<T>(T data, string message = "", int statusCode = 200, bool success = true)
         {
-            // Map HTTP status codes to standard API response codes
-            int responseStatusCode = statusCode switch
-            {
-                200 => 0,    // Success
-                400 => 400,  // Bad Request
-                401 => 401,  // Unauthorized
-                403 => 403,  // Forbidden
-                404 => 404,  // Not Found
-                500 => 500,  // Internal Server Error
-                _ => statusCode
-            };
-
             var response = new ApiResponse<T>
             {
                 Success = success,
                 Message = message,
                 Data = data,
-                StatusCode = responseStatusCode
+                StatusCode = statusCode
             };
 
             return statusCode switch

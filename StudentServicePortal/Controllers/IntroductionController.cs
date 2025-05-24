@@ -4,7 +4,6 @@ using StudentServicePortal.Services;
 using Swashbuckle.AspNetCore.Annotations;
 using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace StudentServicePortal.Controllers
@@ -16,7 +15,7 @@ namespace StudentServicePortal.Controllers
 
         public IntroductionController(IIntroductionService introductionService)
         {
-            _introductionService = introductionService;
+            _introductionService = introductionService ?? throw new ArgumentNullException(nameof(introductionService));
         }
 
         [HttpGet]
@@ -29,9 +28,15 @@ namespace StudentServicePortal.Controllers
             try
             {
                 var introduction = await _introductionService.GetIntroductionAsync();
+
                 if (introduction == null)
                 {
-                    return ApiResponse<IntroductionResponse>(null, "Không tìm thấy thông tin giới thiệu", 404, false);
+                    return ApiResponse<IntroductionResponse>(
+                        data: null,
+                        message: "Không tìm thấy thông tin giới thiệu",
+                        statusCode: 404,
+                        success: false
+                    );
                 }
 
                 var response = new IntroductionResponse
@@ -42,11 +47,21 @@ namespace StudentServicePortal.Controllers
                     ThongTinLienHe = introduction.ContactInfo
                 };
 
-                return ApiResponse(response);
+                return ApiResponse<IntroductionResponse>(
+                    data: response,
+                    message: "Lấy thông tin giới thiệu thành công",
+                    statusCode: 200,
+                    success: true
+                );
             }
             catch (Exception ex)
             {
-                return ApiResponse<IntroductionResponse>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<IntroductionResponse>(
+                    data: null,
+                    message: $"Lỗi hệ thống: {ex.Message}",
+                    statusCode: 500,
+                    success: false
+                );
             }
         }
     }
@@ -65,4 +80,4 @@ namespace StudentServicePortal.Controllers
         [SwaggerSchema(Description = "Danh sách thông tin liên hệ")]
         public List<ContactInfo> ThongTinLienHe { get; set; }
     }
-} 
+}

@@ -18,12 +18,37 @@ namespace StudentServicePortal.Repositories
         public async Task<Introduction> GetIntroductionAsync()
         {
             const string query = @"
-                SELECT TOP 1 MaQL, TieuDe, NoiDung, HinhAnh, ThongTinLienHe
+                SELECT TOP 1 
+                    MaQL,
+                    TieuDe,
+                    NoiDung,
+                    HinhAnh,
+                    ThongTinLienHe
                 FROM GIOI_THIEU
-                ORDER BY MaQL";
+                WHERE MaQL = 'QL_ADMIN'";
 
-            var introduction = await _dbConnection.QueryFirstOrDefaultAsync<Introduction>(query);
-            return introduction;
+            var result = await _dbConnection.QueryFirstOrDefaultAsync<dynamic>(query);
+            
+            if (result == null)
+            {
+                return new Introduction
+                {
+                    ManagerId = "QL_ADMIN",
+                    Title = string.Empty,
+                    Content = string.Empty,
+                    Image = string.Empty,
+                    ContactInfoJson = "[]"
+                };
+            }
+
+            return new Introduction
+            {
+                ManagerId = result.MaQL,
+                Title = result.TieuDe,
+                Content = result.NoiDung,
+                Image = result.HinhAnh,
+                ContactInfoJson = result.ThongTinLienHe
+            };
         }
     }
 } 

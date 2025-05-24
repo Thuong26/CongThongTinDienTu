@@ -48,6 +48,7 @@ namespace StudentServicePortal.Models
         [Column("ThoiGianDang")]
         public DateTime ThoiGianDang { get; set; }  // Thời điểm đăng
 
-        
+        [NotMapped]
+        public string TenPB { get; set; }
     }
 }
