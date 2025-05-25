@@ -74,6 +74,9 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IIntroductionRepository, IntroductionRepository>();
 builder.Services.AddScoped<IIntroductionService, IntroductionService>();
 
+// Add services to the container
+builder.Services.AddScoped<ICodeGeneratorService, CodeGeneratorService>();
+
 // Cấu hình JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();

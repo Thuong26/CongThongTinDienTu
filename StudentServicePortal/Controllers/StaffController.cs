@@ -90,7 +90,9 @@ namespace StudentServicePortal.Controllers
             
             try
             {
-                var details = await _registrationDetailService.GetDetailsByFormIdAsync(maDon);
+                var allDetails = await _registrationDetailService.GetAllDetailsAsync();
+                var details = allDetails.Where(d => d.MaDon == maDon);
+                
                 if (!details.Any())
                 {
                     return ApiResponse<IEnumerable<RegistrationDetail>>(null, "Không tìm thấy chi tiết đơn", 404, false);
@@ -123,10 +125,14 @@ namespace StudentServicePortal.Controllers
             
             try
             {
-                var success = await _registrationDetailService.UpdateStatusByMaDonAsync(maDon, request.TrangThaiXuLy);
+                var allDetails = await _registrationDetailService.GetAllDetailsAsync();
+                var detail = allDetails.FirstOrDefault(d => d.MaDon == maDon);
 
-                if (!success)
+                if (detail == null)
                     return ApiResponse<string>("", $"Không tìm thấy đơn có mã {maDon}", 404, false);
+
+                detail.TrangThaiXuLy = request.TrangThaiXuLy;
+                await _registrationDetailService.UpdateDetailAsync(detail);
 
                 return ApiResponse("", "Cập nhật trạng thái thành công.");
             }

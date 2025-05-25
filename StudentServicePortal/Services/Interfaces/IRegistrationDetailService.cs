@@ -1,10 +1,16 @@
 ﻿using StudentServicePortal.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StudentServicePortal.Services.Interfaces
 {
     public interface IRegistrationDetailService
     {
-        Task<IEnumerable<RegistrationDetail>> GetDetailsByFormIdAsync(string maDon);
-        Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus);
+        Task<RegistrationDetail> GetDetailByIdAsync(string maDonCT);
+        Task<IEnumerable<RegistrationDetail>> GetAllDetailsAsync();
+        Task<RegistrationDetail> AddDetailAsync(RegistrationDetail detail);
+        Task<RegistrationDetail> UpdateDetailAsync(RegistrationDetail detail);
+        Task<bool> DeleteDetailAsync(string maDonCT);
+        Task<string> GenerateMaDonCTAsync();
     }
 }
