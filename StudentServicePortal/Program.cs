@@ -21,11 +21,21 @@ using StudentServicePortal.Repositories.Implementations;
 var builder = WebApplication.CreateBuilder(args);
 
 // Cấu hình HTTP & HTTPS
-builder.WebHost.ConfigureKestrel(options =>
+if (builder.Environment.IsDevelopment())
 {
-    options.ListenAnyIP(5037); // HTTP
-    options.ListenAnyIP(7142, listenOptions => listenOptions.UseHttps()); // HTTPS
-});
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(5037); // HTTP
+        options.ListenAnyIP(7142, listenOptions => listenOptions.UseHttps()); // HTTPS
+    });
+}
+else
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(80); // Chỉ HTTP cho production (Railway)
+    });
+}
 
 // Lấy chuỗi kết nối từ cấu hình
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
