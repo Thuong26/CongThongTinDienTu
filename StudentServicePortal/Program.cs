@@ -12,6 +12,7 @@ using StudentServicePortal.Configurations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MySql.Data.MySqlClient;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -55,7 +56,7 @@ Console.WriteLine($"Connection String: {connectionString}");
 // Đăng ký IDbConnection sử dụng Microsoft.Data.SqlClient hoặc MySql.Data
 if (dbProvider == "mysql")
 {
-    builder.Services.AddTransient<IDbConnection>(sp => new MySql.Data.MySqlClient.MySqlConnection(connectionString));
+    builder.Services.AddTransient<IDbConnection>(sp => new MySqlConnection(connectionString));
 }
 else
 {
