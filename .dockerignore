@@ -1,0 +1,16 @@
+.git
+.vs
+.vscode
+bin
+obj
+*.user
+*.suo
+*.swp
+*.swo
+.DS_Store
+node_modules
+*.log
+*.nupkg
+*.snupkg
+appsettings.*.json
+!appsettings.json 

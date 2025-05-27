@@ -15,14 +15,14 @@ namespace StudentServicePortal.Repositories
             _dbConnection = dbConnection;
         }
 
-        private const string GET_ALL_REGULATIONS = "SELECT * FROM QUY_DINH";
+        private const string GET_ALL_REGULATIONS = @"SELECT qd.*, pb.TenPB FROM QUY_DINH qd LEFT JOIN PHONG_BAN pb ON qd.MaPB = pb.MaPB";
 
         public async Task<IEnumerable<Regulation>> GetAllRegulations()
         {
             return await _dbConnection.QueryAsync<Regulation>(GET_ALL_REGULATIONS);
         }
 
-        private const string GET_REGULATION_BY_ID = "SELECT * FROM QUY_DINH WHERE MaQD = @MaQD";
+        private const string GET_REGULATION_BY_ID = @"SELECT qd.*, pb.TenPB FROM QUY_DINH qd LEFT JOIN PHONG_BAN pb ON qd.MaPB = pb.MaPB WHERE qd.MaQD = @MaQD";
 
         public async Task<Regulation?> GetRegulationById(string maQD)
         {
