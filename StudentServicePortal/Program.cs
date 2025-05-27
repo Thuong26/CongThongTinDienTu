@@ -38,7 +38,10 @@ else
 }
 
 // Lấy chuỗi kết nối từ cấu hình
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var dbProvider = builder.Configuration["DbProvider"] ?? "sqlserver";
+var connectionString = dbProvider == "mysql" 
+    ? builder.Configuration.GetConnectionString("MySqlConnection")
+    : builder.Configuration.GetConnectionString("DefaultConnection");
 
 // Kiểm tra nếu ConnectionString null hoặc rỗng
 if (string.IsNullOrEmpty(connectionString))
@@ -46,17 +49,34 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("ConnectionString property has not been initialized.");
 }
 
+Console.WriteLine($"Using {dbProvider} database provider");
 Console.WriteLine($"Connection String: {connectionString}");
 
-// Đăng ký IDbConnection sử dụng Microsoft.Data.SqlClient
-builder.Services.AddTransient<IDbConnection>(sp => new SqlConnection(connectionString));
+// Đăng ký IDbConnection sử dụng Microsoft.Data.SqlClient hoặc MySql.Data
+if (dbProvider == "mysql")
+{
+    builder.Services.AddTransient<IDbConnection>(sp => new MySql.Data.MySqlClient.MySqlConnection(connectionString));
+}
+else
+{
+    builder.Services.AddTransient<IDbConnection>(sp => new SqlConnection(connectionString));
+}
 
 // Đăng ký DbContext
-builder.Services.AddDbContext<StudentPortalDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions =>
-        sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
-    )
-);
+if (dbProvider == "mysql")
+{
+    builder.Services.AddDbContext<StudentPortalDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
+    );
+}
+else
+{
+    builder.Services.AddDbContext<StudentPortalDbContext>(options =>
+        options.UseSqlServer(connectionString, sqlOptions =>
+            sqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null)
+        )
+    );
+}
 
 // Đăng ký Repository và Service
 builder.Services.AddScoped<IStudentRepository, StudentRepository>();
