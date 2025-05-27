@@ -25,3 +25,9 @@ obj/
 *.env
 appsettings.*.json
 .vs/
+
+# Thêm vào .gitignore
+*.swp
+*.swo
+.DS_Store
+node_modules/
