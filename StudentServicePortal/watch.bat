@@ -1,0 +1,3 @@
+@echo off
+echo Starting StudentServicePortal with hot reload...
+dotnet watch run --launch-profile "watch" 

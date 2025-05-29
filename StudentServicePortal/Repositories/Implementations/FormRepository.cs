@@ -15,9 +15,15 @@ namespace StudentServicePortal.Repositories
         }
 
         private const string GET_ALL_FORMS = @"
-            SELECT MaBM, MaCB, MaPB, TenBM, LienKet, ThoiGianDang 
-            FROM [dbo].[BIEU_MAU]";
-        private const string GET_FORM_BY_ID = "SELECT * FROM BIEU_MAU WHERE MaBM = @MaBM";
+            SELECT bm.MaBM, bm.MaCB, bm.MaPB, bm.TenBM, bm.LienKet, bm.ThoiGianDang, pb.TenPB 
+            FROM [dbo].[BIEU_MAU] bm
+            LEFT JOIN [dbo].[PHONG_BAN] pb ON bm.MaPB = pb.MaPB
+            ORDER BY bm.ThoiGianDang DESC";
+        private const string GET_FORM_BY_ID = @"
+            SELECT bm.*, pb.TenPB
+            FROM BIEU_MAU bm
+            LEFT JOIN PHONG_BAN pb ON bm.MaPB = pb.MaPB
+            WHERE bm.MaBM = @MaBM";
         private const string INSERT_FORM = @"
         INSERT INTO BIEU_MAU (MaBM, MaCB, MaPB, TenBM, LienKet, ThoiGianDang)
         VALUES (@MaBM, @MaCB, @MaPB, @TenBM, @LienKet, @ThoiGianDang)";

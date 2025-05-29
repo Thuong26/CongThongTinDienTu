@@ -10,9 +10,8 @@ using System.Security.Claims;
 
 namespace StudentServicePortal.Controllers
 {
-    [ApiController]
     [Route("api/auth")]
-    public class AuthController : ControllerBase
+    public class AuthController : BaseController
     {
         private readonly IAuthService _authService;
         private readonly IEmailService _emailService;
