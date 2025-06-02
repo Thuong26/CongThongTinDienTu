@@ -11,5 +11,6 @@ namespace StudentServicePortal.Repositories
         Task<bool> CreateAsync(Regulation regulation);
 
         Task<bool> UpdateAsync(string maQD, Regulation regulation);
+        Task<IEnumerable<Regulation>> GetRegulationsByDepartment(string maPB);
     }
 }

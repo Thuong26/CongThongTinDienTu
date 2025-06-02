@@ -18,15 +18,17 @@ namespace StudentServicePortal.Repositories
 
         private const string GET_ALL_FORMS = @"
         SELECT
-            MaDon             AS MaDon,
-            MaPB              AS MaPB,
-            TenDon            AS TenDon,
-            MaCB              AS MaCB,
-            MaQL              AS MaQL,
-            ThongTinChiTiet   AS ThongTinChiTiet,
-            ThoiGianDang      AS ThoiGianDang,
-            TrangThai         AS TrangThai
-        FROM [dbo].[DON_DANG_KY]";
+            ddk.MaDon             AS MaDon,
+            ddk.MaPB              AS MaPB,
+            ddk.TenDon            AS TenDon,
+            ddk.MaCB              AS MaCB,
+            ddk.MaQL              AS MaQL,
+            ddk.ThongTinChiTiet   AS ThongTinChiTiet,
+            ddk.ThoiGianDang      AS ThoiGianDang,
+            ddk.TrangThai         AS TrangThai,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB";
         private const string GET_FORM_BY_ID = @"
         SELECT 
             MaDonCT, MaDon, MaSV, HocKyHienTai, 
@@ -34,9 +36,12 @@ namespace StudentServicePortal.Repositories
         FROM [dbo].[DON_DANG_KY_CHI_TIET] 
         WHERE MaDon = @MaDon";
         private const string GET_FORM_ID = @"
-        SELECT *
-        FROM [dbo].[DON_DANG_KY] 
-        WHERE MaDon = @MaDon";
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaDon = @MaDon";
         private const string INSERT_FORM = @"
         INSERT INTO [dbo].[DON_DANG_KY] (
             MaDon, MaPB, TenDon, MaCB, MaQL, 
@@ -68,8 +73,12 @@ namespace StudentServicePortal.Repositories
             return await _dbConnection.QueryFirstOrDefaultAsync<RegistrationDetail>(GET_FORM_BY_ID, parameters);
         }
         private const string GET_PENDING_FORMS = @"
-            SELECT * FROM DON_DANG_KY
-            WHERE TrangThai = 1";
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.TrangThai = 1";
         public async Task<IEnumerable<RegistrationForm>> GetPendingFormsAsync()
         {
             return await _dbConnection.QueryAsync<RegistrationForm>(GET_PENDING_FORMS);

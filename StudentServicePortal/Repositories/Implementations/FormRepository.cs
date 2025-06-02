@@ -32,6 +32,10 @@ namespace StudentServicePortal.Repositories
         SET MaCB = @MaCB, MaPB = @MaPB, TenBM = @TenBM, 
             LienKet = @LienKet, ThoiGianDang = @ThoiGianDang
         WHERE MaBM = @MaBM";
+        private const string DELETE_FORM = @"
+        DELETE FROM BIEU_MAU 
+        WHERE MaBM = @MaBM";
+
         public async Task<IEnumerable<Form>> GetAllForms()
         {
             return await _dbConnection.QueryAsync<Form>(GET_ALL_FORMS);
@@ -53,7 +57,6 @@ namespace StudentServicePortal.Repositories
             return result > 0;
         }
 
-
         public async Task<bool> UpdateAsync(string maBM, Form form)
         {
             form.ThoiGianDang = DateTime.Now;
@@ -68,6 +71,15 @@ namespace StudentServicePortal.Repositories
             };
 
             var affectedRows = await _dbConnection.ExecuteAsync(UPDATE_FORM, parameters);
+            return affectedRows > 0;
+        }
+
+        public async Task<bool> DeleteFormAsync(string maBM)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaBM", maBM);
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_FORM, parameters);
             return affectedRows > 0;
         }
     }

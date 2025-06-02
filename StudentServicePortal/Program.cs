@@ -54,28 +54,23 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddTransient<IRegistrationFormRepository, RegistrationFormRepository>();
-builder.Services.AddTransient<IRegistrationFormService, RegistrationFormService>();
+builder.Services.AddScoped<ICodeGeneratorService, CodeGeneratorService>();
+builder.Services.AddScoped<IRegistrationFormRepository, RegistrationFormRepository>();
+builder.Services.AddScoped<IRegistrationFormService, RegistrationFormService>();
+builder.Services.AddScoped<IRegistrationDetailRepository, RegistrationDetailRepository>();
+builder.Services.AddScoped<IRegistrationDetailService, RegistrationDetailService>();
 builder.Services.AddScoped<IFormRepository, FormRepository>();
 builder.Services.AddScoped<IFormService, FormService>();
 builder.Services.AddScoped<IRegulationRepository, RegulationRepository>();
 builder.Services.AddScoped<IRegulationService, RegulationService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
-builder.Services.AddScoped<IRegistrationDetailRepository, RegistrationDetailRepository>();
-builder.Services.AddScoped<IRegistrationDetailService, RegistrationDetailService>();
-builder.Services.AddScoped<IStaffRepository, StaffRepository>();
-builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
-// Đăng ký Introduction Repository và Service
 builder.Services.AddScoped<IIntroductionRepository, IntroductionRepository>();
 builder.Services.AddScoped<IIntroductionService, IntroductionService>();
-
-// Add services to the container
-builder.Services.AddScoped<ICodeGeneratorService, CodeGeneratorService>();
 
 // Cấu hình JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));

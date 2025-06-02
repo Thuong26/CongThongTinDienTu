@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Swashbuckle.AspNetCore.Annotations;
+using System.Collections.Generic;
 
 namespace StudentServicePortal.Controllers
 {
@@ -19,13 +20,22 @@ namespace StudentServicePortal.Controllers
         private readonly IRegistrationDetailService _registrationDetailService;
         private readonly IFormService _formService2;
         private readonly IRegulationService _regulationService;
-        public StaffController(IStaffService staffService, IRegistrationFormService formService, IRegistrationDetailService registrationDetailService, IRegulationService regulationService, IFormService formService2)
+        private readonly ICodeGeneratorService _codeGenerator;
+
+        public StaffController(
+            IStaffService staffService, 
+            IRegistrationFormService formService, 
+            IRegistrationDetailService registrationDetailService, 
+            IRegulationService regulationService, 
+            IFormService formService2,
+            ICodeGeneratorService codeGenerator)
         {
             _staffService = staffService;
             _formService = formService;
             _registrationDetailService = registrationDetailService;
             _regulationService = regulationService;
             _formService2 = formService2;
+            _codeGenerator = codeGenerator;
         }
 
         [HttpGet("profile")]
@@ -142,23 +152,81 @@ namespace StudentServicePortal.Controllers
             }
         }
 
+        [HttpGet("templates")]
+        [SwaggerOperation(Summary = "Lấy danh sách biểu mẫu", Description = "API trả về danh sách biểu mẫu của phòng ban mà cán bộ đang làm việc")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<Form>>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<IEnumerable<Form>>>> GetAllFormTemplates()
+        {
+            try
+            {
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<IEnumerable<Form>>(null, "Không xác định được cán bộ", 401, false);
+                }
+
+                // Lấy thông tin phòng ban của cán bộ
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<IEnumerable<Form>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Lấy danh sách biểu mẫu của phòng ban
+                var forms = await _formService2.GetAllForms();
+                var departmentForms = forms.Where(f => f.MaPB == staff.MaPB);
+
+                return ApiResponse(departmentForms, "Lấy danh sách biểu mẫu thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IEnumerable<Form>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
         [HttpPost("templates")]
         [SwaggerOperation(Summary = "Tạo mới biểu mẫu", Description = "API cho phép cán bộ tạo mới một biểu mẫu đăng ký")]
         [SwaggerResponse(200, "Tạo biểu mẫu thành công", typeof(ApiResponse<string>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<string>>> CreateForm([FromBody] Form form)
+        public async Task<ActionResult<ApiResponse<string>>> CreateForm([FromBody] FormRequest request)
         {
             try
             {
-                if (form == null)
+                if (request == null)
                     return ApiResponse<string>("", "Biểu mẫu không được rỗng", 400, false);
                     
-                if (string.IsNullOrEmpty(form.MaBM))
-                    return ApiResponse<string>("", "Mã biểu mẫu không được rỗng", 400, false);
-                    
-                if (string.IsNullOrEmpty(form.TenBM))
+                if (string.IsNullOrEmpty(request.TenBM))
                     return ApiResponse<string>("", "Tên biểu mẫu không được rỗng", 400, false);
+
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<string>("", "Không xác định được cán bộ", 401, false);
+                }
+
+                // Lấy thông tin phòng ban của cán bộ
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<string>("", "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Tạo đối tượng Form từ request
+                var form = new Form
+                {
+                    MaBM = await _codeGenerator.GenerateMaDonCTAsync(), // Tự động tạo mã biểu mẫu
+                    MaCB = maCB,
+                    MaPB = staff.MaPB,
+                    TenBM = request.TenBM,
+                    LienKet = request.LienKet,
+                    ThoiGianDang = DateTime.Now // Lấy thời gian hiện tại
+                };
 
                 var success = await _formService2.CreateFormAsync(form);
 
@@ -274,5 +342,91 @@ namespace StudentServicePortal.Controllers
                 return ApiResponse<string>("", $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
+
+        [HttpDelete("templates/{maBM}")]
+        [SwaggerOperation(Summary = "Xóa biểu mẫu", Description = "API cho phép cán bộ xóa một biểu mẫu của phòng ban")]
+        [SwaggerResponse(200, "Xóa biểu mẫu thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(400, "Mã biểu mẫu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy biểu mẫu", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<string>>> DeleteForm(string maBM)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(maBM))
+                {
+                    return ApiResponse<string>("", "Mã biểu mẫu không hợp lệ", 400, false);
+                }
+
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<string>("", "Không xác định được cán bộ", 401, false);
+                }
+
+                // Lấy thông tin phòng ban của cán bộ
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<string>("", "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Kiểm tra xem biểu mẫu có thuộc phòng ban của cán bộ không
+                var forms = await _formService2.GetAllForms();
+                var form = forms.FirstOrDefault(f => f.MaBM == maBM && f.MaPB == staff.MaPB);
+                if (form == null)
+                {
+                    return ApiResponse<string>("", "Không tìm thấy biểu mẫu hoặc bạn không có quyền xóa biểu mẫu này", 404, false);
+                }
+
+                // Xóa biểu mẫu
+                var success = await _formService2.DeleteFormAsync(maBM);
+                if (!success)
+                {
+                    return ApiResponse<string>("", "Xóa biểu mẫu thất bại", 500, false);
+                }
+
+                return ApiResponse("", "Xóa biểu mẫu thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<string>("", $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
+        [HttpGet("regulations/department")]
+        [SwaggerOperation(Summary = "Lấy danh sách quy định theo phòng ban", Description = "API trả về danh sách các quy định của phòng ban")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<Regulation>>))]
+        [SwaggerResponse(400, "Mã phòng ban không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<IEnumerable<Regulation>>>> GetRegulationsByDepartment()
+        {
+            try
+            {
+                // Lấy mã phòng ban từ token
+                var staffId = User.FindFirst("StaffId")?.Value;
+                if (string.IsNullOrEmpty(staffId))
+                    return ApiResponse<IEnumerable<Regulation>>(null, "Không tìm thấy thông tin cán bộ", 400, false);
+
+                var staff = await _staffService.GetProfileAsync(staffId);
+                if (staff == null)
+                    return ApiResponse<IEnumerable<Regulation>>(null, "Không tìm thấy thông tin cán bộ", 400, false);
+
+                var regulations = await _regulationService.GetRegulationsByDepartment(staff.MaPB);
+                return ApiResponse(regulations, "Lấy danh sách quy định thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<IEnumerable<Regulation>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+    }
+
+    public class FormRequest
+    {
+        public string TenBM { get; set; }
+        public string LienKet { get; set; }
     }
 }

@@ -30,6 +30,21 @@ namespace StudentServicePortal.Repositories
             parameters.Add("@MaQD", maQD);
             return await _dbConnection.QueryFirstOrDefaultAsync<Regulation>(GET_REGULATION_BY_ID, parameters);
         }
+
+        private const string GET_REGULATIONS_BY_DEPARTMENT = @"
+            SELECT qd.*, pb.TenPB 
+            FROM QUY_DINH qd 
+            LEFT JOIN PHONG_BAN pb ON qd.MaPB = pb.MaPB 
+            WHERE qd.MaPB = @MaPB 
+            ORDER BY qd.ThoiGianDang DESC";
+
+        public async Task<IEnumerable<Regulation>> GetRegulationsByDepartment(string maPB)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaPB", maPB);
+            return await _dbConnection.QueryAsync<Regulation>(GET_REGULATIONS_BY_DEPARTMENT, parameters);
+        }
+
         private const string INSERT = @"
         INSERT INTO QUY_DINH (
             MaQD, TenQD, MaCB, MaPB, LienKet, LoaiVanBan, 
