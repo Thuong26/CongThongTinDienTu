@@ -39,24 +39,9 @@ namespace StudentServicePortal.Controllers
         {
             try
             {
-                // Lấy MSSV từ token
-                var mssv = User.FindFirst("MSSV")?.Value;
-                if (string.IsNullOrEmpty(mssv))
-                {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không xác định được sinh viên", 401, false);
-                }
-
                 // Lấy tất cả đơn đăng ký
                 var allForms = await _formService.GetAllForms();
-                
-                // Lọc chỉ lấy đơn của sinh viên hiện tại
-                var studentForms = allForms.Where(f => 
-                {
-                    var details = _service.GetAllDetailsAsync().Result;
-                    return details.Any(d => d.MaDon == f.MaDon && d.MaSV == mssv);
-                });
-
-                return ApiResponse(studentForms, "Lấy danh sách đơn đăng ký thành công");
+                return ApiResponse<IEnumerable<RegistrationForm>>(allForms, "Lấy danh sách đơn đăng ký thành công");
             }
             catch (Exception ex)
             {
