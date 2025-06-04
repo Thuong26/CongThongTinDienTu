@@ -36,5 +36,14 @@ namespace StudentServicePortal.Services
 
             return await _formRepository.UpdateAsync(maBM, form);
         }
+
+        public async Task<bool> DeleteFormAsync(string maBM)
+        {
+            var existingForm = await _formRepository.GetFormById(maBM);
+            if (existingForm == null)
+                return false;
+
+            return await _formRepository.DeleteFormAsync(maBM);
+        }
     }
 }

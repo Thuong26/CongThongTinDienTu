@@ -1,69 +1,174 @@
 ﻿using Dapper;
+using Microsoft.Extensions.Configuration;
 using StudentServicePortal.Models;
 using StudentServicePortal.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
 
-public class RegistrationDetailRepository : IRegistrationDetailRepository
+namespace StudentServicePortal.Repositories.Implementations
 {
-    private readonly IDbConnection _dbConnection;
-
-    public RegistrationDetailRepository(IDbConnection dbConnection)
+    public class RegistrationDetailRepository : IRegistrationDetailRepository
     {
-        _dbConnection = dbConnection;
-    }
+        private readonly IDbConnection _connection;
 
-    public async Task<IEnumerable<RegistrationDetail>> GetDetailsByFormIdAsync(string maDon)
-    {
-        string query = "SELECT * FROM DON_DANG_KY_CHI_TIET WHERE MaDon = @MaDon";
-        return await _dbConnection.QueryAsync<RegistrationDetail>(query, new { MaDon = maDon });
-    }
-    private const string UPDATE_STATUS_BY_MADON = @"
-        UPDATE DON_DANG_KY_CHI_TIET 
-        SET TrangThaiXuLy = @TrangThaiXuLy 
-        WHERE MaDon = @MaDon";
-    private const string UPDATE_STATUS_IN_FORM = @"
-        UPDATE DON_DANG_KY 
-        SET TrangThai = @TrangThaiXuLy 
-        WHERE MaDon = @MaDon";
-
-    public async Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus)
-    {
-        var parameters = new DynamicParameters();
-        parameters.Add("@MaDon", maDon);
-        parameters.Add("@TrangThaiXuLy", newStatus);
-
-        var rowsAffectedDetail = await _dbConnection.ExecuteAsync(UPDATE_STATUS_BY_MADON, parameters);
-        var rowsAffectedForm = await _dbConnection.ExecuteAsync(UPDATE_STATUS_IN_FORM, parameters);
-
-        return rowsAffectedDetail > 0 && rowsAffectedForm > 0;
-    }
-
-    public async Task AddAsync(RegistrationDetail detail)
-    {
-        const string sql = @"
-INSERT INTO DON_DANG_KY_CHI_TIET
-    (MaDonCT, MaDon, MaSV, HocKyHienTai, NgayTaoDonCT, ThongTinChiTiet, TrangThaiXuLy)
-VALUES
-    (@MaDonCT, @MaDon, @MaSV, @HocKyHienTai, @NgayTaoDonCT, @ThongTinChiTiet, @TrangThaiXuLy)";
-
-        await _dbConnection.ExecuteAsync(sql, new
+        public RegistrationDetailRepository(IDbConnection connection)
         {
-            detail.MaDonCT,
-            detail.MaDon,
-            detail.MaSV,
-            detail.HocKyHienTai,
-            detail.NgayTaoDonCT,
-            detail.ThongTinChiTiet,
-            detail.TrangThaiXuLy
-        });
-    }
-    public async Task<RegistrationDetail> GetByIdAsync(string maDonCT)
-    {
-        const string sql = @"
-SELECT MaDonCT, MaDon, MaSV, HocKyHienTai, NgayTaoDonCT, ThongTinChiTiet, TrangThaiXuLy
-FROM DON_DANG_KY_CHI_TIET
-WHERE MaDonCT = @MaDonCT";
+            _connection = connection ?? throw new ArgumentNullException(nameof(connection));
+        }
 
-        return await _dbConnection.QuerySingleOrDefaultAsync<RegistrationDetail>(sql, new { MaDonCT = maDonCT });
+        public async Task<IEnumerable<RegistrationDetail>> GetAllDetailsAsync()
+        {
+            const string sql = @"
+                SELECT 
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                FROM DON_DANG_KY_CHI_TIET
+                ORDER BY NgayTaoDonCT DESC";
+
+            return await _connection.QueryAsync<RegistrationDetail>(sql);
+        }
+
+        public async Task<RegistrationDetail> GetDetailByIdAsync(string maDonCT)
+        {
+            const string sql = @"
+                SELECT 
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                FROM DON_DANG_KY_CHI_TIET
+                WHERE MaDonCT = @MaDonCT";
+
+            return await _connection.QueryFirstOrDefaultAsync<RegistrationDetail>(sql, new { MaDonCT = maDonCT });
+        }
+
+        public async Task<RegistrationDetail> AddDetailAsync(RegistrationDetail detail)
+        {
+            const string sql = @"
+                INSERT INTO DON_DANG_KY_CHI_TIET (
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                ) VALUES (
+                    @MaDonCT,
+                    @MaDon,
+                    @MaSV,
+                    @HocKyHienTai,
+                    @ThongTinChiTiet,
+                    @NgayTaoDonCT,
+                    @TrangThaiXuLy
+                )";
+
+            await _connection.ExecuteAsync(sql, detail);
+            return detail;
+        }
+
+        public async Task<RegistrationDetail> UpdateDetailAsync(RegistrationDetail detail)
+        {
+            const string sql = @"
+                UPDATE DON_DANG_KY_CHI_TIET
+                SET 
+                    MaDon = @MaDon,
+                    MaSV = @MaSV,
+                    HocKyHienTai = @HocKyHienTai,
+                    ThongTinChiTiet = @ThongTinChiTiet,
+                    NgayTaoDonCT = @NgayTaoDonCT,
+                    TrangThaiXuLy = @TrangThaiXuLy
+                WHERE MaDonCT = @MaDonCT";
+
+            await _connection.ExecuteAsync(sql, detail);
+            return detail;
+        }
+
+        public async Task<bool> DeleteDetailAsync(string maDonCT)
+        {
+            const string sql = "DELETE FROM DON_DANG_KY_CHI_TIET WHERE MaDonCT = @MaDonCT";
+            var rowsAffected = await _connection.ExecuteAsync(sql, new { MaDonCT = maDonCT });
+            return rowsAffected > 0;
+        }
+
+        public async Task<RegistrationDetail> GetLastDetailAsync()
+        {
+            const string sql = @"
+                SELECT TOP 1 
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                FROM DON_DANG_KY_CHI_TIET
+                ORDER BY MaDonCT DESC";
+
+            return await _connection.QueryFirstOrDefaultAsync<RegistrationDetail>(sql);
+        }
+
+        public async Task<IEnumerable<RegistrationDetail>> GetDetailsByFormIdAsync(string maDon)
+        {
+            const string sql = @"
+                SELECT 
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                FROM DON_DANG_KY_CHI_TIET
+                WHERE MaDon = @MaDon
+                ORDER BY NgayTaoDonCT DESC";
+
+            return await _connection.QueryAsync<RegistrationDetail>(sql, new { MaDon = maDon });
+        }
+
+        public async Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus)
+        {
+            const string sql = @"
+                UPDATE DON_DANG_KY_CHI_TIET
+                SET TrangThaiXuLy = @TrangThaiXuLy
+                WHERE MaDon = @MaDon";
+
+            var rowsAffected = await _connection.ExecuteAsync(sql, new { MaDon = maDon, TrangThaiXuLy = newStatus });
+            return rowsAffected > 0;
+        }
+
+        public async Task AddAsync(RegistrationDetail detail)
+        {
+            const string sql = @"
+                INSERT INTO DON_DANG_KY_CHI_TIET (
+                    MaDonCT,
+                    MaDon,
+                    MaSV,
+                    HocKyHienTai,
+                    ThongTinChiTiet,
+                    NgayTaoDonCT,
+                    TrangThaiXuLy
+                ) VALUES (
+                    @MaDonCT,
+                    @MaDon,
+                    @MaSV,
+                    @HocKyHienTai,
+                    @ThongTinChiTiet,
+                    @NgayTaoDonCT,
+                    @TrangThaiXuLy
+                )";
+
+            await _connection.ExecuteAsync(sql, detail);
+        }
     }
 }
