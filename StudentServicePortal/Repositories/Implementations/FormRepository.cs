@@ -82,5 +82,22 @@ namespace StudentServicePortal.Repositories
             var affectedRows = await _dbConnection.ExecuteAsync(DELETE_FORM, parameters);
             return affectedRows > 0;
         }
+
+        public async Task<bool> DeleteMultipleFormsAsync(IEnumerable<string> maBMList)
+        {
+            if (maBMList == null || !maBMList.Any())
+                return false;
+
+            var maBMArray = maBMList.ToArray();
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaBMList", maBMArray);
+
+            const string DELETE_MULTIPLE_FORMS = @"
+            DELETE FROM BIEU_MAU 
+            WHERE MaBM IN @MaBMList";
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_MULTIPLE_FORMS, parameters);
+            return affectedRows > 0;
+        }
     }
 }

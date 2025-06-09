@@ -79,9 +79,42 @@ namespace StudentServicePortal.Repositories
         FROM [dbo].[DON_DANG_KY] ddk
         LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
         WHERE ddk.TrangThai = 1";
+        
+        private const string GET_FORMS_BY_DEPARTMENT = @"
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaPB = @MaPB
+        ORDER BY ddk.ThoiGianDang DESC";
+        
+        private const string GET_PENDING_FORMS_BY_DEPARTMENT = @"
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaPB = @MaPB AND ddk.TrangThai = 1
+        ORDER BY ddk.ThoiGianDang DESC";
+        
         public async Task<IEnumerable<RegistrationForm>> GetPendingFormsAsync()
         {
             return await _dbConnection.QueryAsync<RegistrationForm>(GET_PENDING_FORMS);
+        }
+
+        public async Task<IEnumerable<RegistrationForm>> GetFormsByDepartmentAsync(string maPB)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaPB", maPB);
+            return await _dbConnection.QueryAsync<RegistrationForm>(GET_FORMS_BY_DEPARTMENT, parameters);
+        }
+
+        public async Task<IEnumerable<RegistrationForm>> GetPendingFormsByDepartmentAsync(string maPB)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaPB", maPB);
+            return await _dbConnection.QueryAsync<RegistrationForm>(GET_PENDING_FORMS_BY_DEPARTMENT, parameters);
         }
 
         public async Task<RegistrationForm> GetByFormIdAsync(string maDon)

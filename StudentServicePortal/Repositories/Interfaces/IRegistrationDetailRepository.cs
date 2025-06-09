@@ -15,5 +15,7 @@ namespace StudentServicePortal.Repositories.Interfaces
         Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus);
         Task AddAsync(RegistrationDetail detail);
         Task<RegistrationDetail> GetLastDetailAsync();
+        Task<IEnumerable<RegistrationDetailWithStudentInfo>> GetDetailsByFormIdWithStudentInfoAsync(string maDon);
+        Task<RegistrationDetailWithStudentInfo> GetDetailByIdWithStudentInfoAsync(string maDonCT);
     }
 }

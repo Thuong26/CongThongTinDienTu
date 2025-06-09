@@ -15,5 +15,7 @@ namespace StudentServicePortal.Services
         Task<bool> UpdateFormAsync(string maBM, Form form);
 
         Task<bool> DeleteFormAsync(string maBM);
+        
+        Task<bool> DeleteMultipleFormsAsync(IEnumerable<string> maBMList);
     }
 }

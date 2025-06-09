@@ -50,49 +50,77 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("details")]
-        [SwaggerOperation(Summary = "Lấy danh sách chi tiết đơn đăng ký", Description = "API trả về toàn bộ danh sách chi tiết đơn đăng ký của sinh viên")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationDetailWithTenDon>>))]
+        [SwaggerOperation(Summary = "Lấy danh sách chi tiết đơn đăng ký", Description = "API trả về toàn bộ danh sách chi tiết đơn đăng ký của sinh viên kèm thông tin sinh viên")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>))]
         [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetailWithTenDon>>>> GetAllDetails()
+        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>>> GetAllDetails()
         {
             try
             {
                 var mssv = User.FindFirst("MSSV")?.Value;
                 if (string.IsNullOrEmpty(mssv))
                 {
-                    return ApiResponse<IEnumerable<RegistrationDetailWithTenDon>>(null, "Không xác định được sinh viên", 401, false);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không xác định được sinh viên", 401, false);
                 }
 
                 var allDetails = await _service.GetAllDetailsAsync();
                 var studentDetails = allDetails.Where(d => d.MaSV == mssv).ToList();
 
-                var maDonList = studentDetails.Select(d => d.MaDon).Distinct().ToList();
-                var forms = new Dictionary<string, RegistrationForm>();
-                foreach (var maDon in maDonList)
+                var resultList = new List<RegistrationDetailWithStudentInfo>();
+
+                foreach (var detail in studentDetails)
                 {
-                    var form = await _formService.GetByFormIdAsync(maDon);
-                    if (form != null)
-                        forms[maDon] = form;
+                    var detailsWithStudentInfo = await _service.GetDetailsByFormIdWithStudentInfoAsync(detail.MaDon);
+                    var studentDetail = detailsWithStudentInfo.FirstOrDefault(d => d.MaDonCT == detail.MaDonCT);
+                    
+                    if (studentDetail != null)
+                    {
+                        resultList.Add(studentDetail);
+                    }
                 }
 
-                var result = studentDetails.Select(d => new RegistrationDetailWithTenDon
-                {
-                    MaDonCT = d.MaDonCT,
-                    MaDon = d.MaDon,
-                    TenDon = forms.ContainsKey(d.MaDon) ? forms[d.MaDon].TenDon : "",
-                    MaSV = d.MaSV,
-                    HocKyHienTai = d.HocKyHienTai,
-                    NgayTaoDonCT = d.NgayTaoDonCT,
-                    ThongTinChiTiet = d.ThongTinChiTiet,
-                    TrangThaiXuLy = d.TrangThaiXuLy
-                });
-
-                return ApiResponse(result, "Lấy danh sách chi tiết đơn đăng ký thành công");
+                return ApiResponse(resultList, "Lấy danh sách chi tiết đơn đăng ký thành công");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<RegistrationDetailWithTenDon>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+        
+        [HttpGet("detail/{maDonCT}")]
+        [SwaggerOperation(Summary = "Lấy chi tiết đơn đăng ký theo mã", Description = "API trả về thông tin chi tiết đơn đăng ký kèm thông tin sinh viên")]
+        [SwaggerResponse(200, "Lấy chi tiết thành công", typeof(ApiResponse<RegistrationDetailWithStudentInfo>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy đơn", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<RegistrationDetailWithStudentInfo>>> GetDetailById(string maDonCT)
+        {
+            try
+            {
+                var mssv = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(mssv))
+                {
+                    return ApiResponse<RegistrationDetailWithStudentInfo>(null, "Không xác định được sinh viên", 401, false);
+                }
+
+                var detail = await _service.GetDetailByIdWithStudentInfoAsync(maDonCT);
+                if (detail == null)
+                {
+                    return ApiResponse<RegistrationDetailWithStudentInfo>(null, "Không tìm thấy đơn đăng ký", 404, false);
+                }
+
+                // Kiểm tra quyền truy cập (chỉ sinh viên tạo đơn mới được xem)
+                if (detail.MaSV != mssv)
+                {
+                    return ApiResponse<RegistrationDetailWithStudentInfo>(null, "Bạn không có quyền xem đơn này", 401, false);
+                }
+
+                return ApiResponse(detail, "Lấy chi tiết đơn đăng ký thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<RegistrationDetailWithStudentInfo>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
         

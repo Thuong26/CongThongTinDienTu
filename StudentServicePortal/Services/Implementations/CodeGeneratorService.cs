@@ -1,5 +1,6 @@
 using StudentServicePortal.Repositories.Interfaces;
 using StudentServicePortal.Services.Interfaces;
+using StudentServicePortal.Repositories;
 using System;
 using System.Threading.Tasks;
 
@@ -7,17 +8,19 @@ namespace StudentServicePortal.Services.Implementations
 {
     public class CodeGeneratorService : ICodeGeneratorService
     {
-        private readonly IRegistrationDetailRepository _repository;
+        private readonly IRegistrationDetailRepository _registrationDetailRepository;
+        private readonly IRegulationRepository _regulationRepository;
 
-        public CodeGeneratorService(IRegistrationDetailRepository repository)
+        public CodeGeneratorService(IRegistrationDetailRepository registrationDetailRepository, IRegulationRepository regulationRepository)
         {
-            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _registrationDetailRepository = registrationDetailRepository ?? throw new ArgumentNullException(nameof(registrationDetailRepository));
+            _regulationRepository = regulationRepository ?? throw new ArgumentNullException(nameof(regulationRepository));
         }
 
         public async Task<string> GenerateMaDonCTAsync()
         {
             // Lấy mã đơn chi tiết cuối cùng
-            var lastDetail = await _repository.GetLastDetailAsync();
+            var lastDetail = await _registrationDetailRepository.GetLastDetailAsync();
             string newMaDonCT;
 
             if (lastDetail == null)
@@ -34,6 +37,28 @@ namespace StudentServicePortal.Services.Implementations
             }
 
             return newMaDonCT;
+        }
+
+        public async Task<string> GenerateMaQDAsync()
+        {
+            // Lấy mã quy định cuối cùng
+            var lastRegulation = await _regulationRepository.GetLastRegulationAsync();
+            string newMaQD;
+
+            if (lastRegulation == null)
+            {
+                // Nếu chưa có quy định nào, bắt đầu từ QD001
+                newMaQD = "QD001";
+            }
+            else
+            {
+                // Lấy số từ mã quy định cuối và tăng lên 1
+                string lastNumber = lastRegulation.MaQD.Substring(2);
+                int nextNumber = int.Parse(lastNumber) + 1;
+                newMaQD = $"QD{nextNumber:D3}";
+            }
+
+            return newMaQD;
         }
     }
 } 

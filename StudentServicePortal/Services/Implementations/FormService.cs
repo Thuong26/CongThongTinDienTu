@@ -45,5 +45,22 @@ namespace StudentServicePortal.Services
 
             return await _formRepository.DeleteFormAsync(maBM);
         }
+
+        public async Task<bool> DeleteMultipleFormsAsync(IEnumerable<string> maBMList)
+        {
+            if (maBMList == null || !maBMList.Any())
+                return false;
+
+            // Kiểm tra tất cả biểu mẫu có tồn tại không
+            var allForms = await _formRepository.GetAllForms();
+            var existingFormIds = allForms.Select(f => f.MaBM).ToHashSet();
+            
+            var validFormIds = maBMList.Where(id => existingFormIds.Contains(id)).ToList();
+            
+            if (!validFormIds.Any())
+                return false;
+
+            return await _formRepository.DeleteMultipleFormsAsync(validFormIds);
+        }
     }
 }

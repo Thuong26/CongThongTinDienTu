@@ -71,6 +71,22 @@ namespace StudentServicePortal.Services.Implementations
             return await _repository.UpdateStatusByMaDonAsync(maDon, newStatus);
         }
 
+        public async Task<IEnumerable<RegistrationDetailWithStudentInfo>> GetDetailsByFormIdWithStudentInfoAsync(string maDon)
+        {
+            if (string.IsNullOrEmpty(maDon))
+                throw new ArgumentException("Mã đơn không được để trống", nameof(maDon));
+
+            return await _repository.GetDetailsByFormIdWithStudentInfoAsync(maDon);
+        }
+
+        public async Task<RegistrationDetailWithStudentInfo> GetDetailByIdWithStudentInfoAsync(string maDonCT)
+        {
+            if (string.IsNullOrEmpty(maDonCT))
+                throw new ArgumentException("Mã đơn chi tiết không được để trống", nameof(maDonCT));
+
+            return await _repository.GetDetailByIdWithStudentInfoAsync(maDonCT);
+        }
+
         public async Task<string> GenerateMaDonCTAsync()
         {
             var lastDetail = await _repository.GetLastDetailAsync();

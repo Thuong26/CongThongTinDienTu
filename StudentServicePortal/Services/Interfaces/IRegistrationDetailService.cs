@@ -12,5 +12,7 @@ namespace StudentServicePortal.Services.Interfaces
         Task<RegistrationDetail> UpdateDetailAsync(RegistrationDetail detail);
         Task<bool> DeleteDetailAsync(string maDonCT);
         Task<string> GenerateMaDonCTAsync();
+        Task<IEnumerable<RegistrationDetailWithStudentInfo>> GetDetailsByFormIdWithStudentInfoAsync(string maDon);
+        Task<RegistrationDetailWithStudentInfo> GetDetailByIdWithStudentInfoAsync(string maDonCT);
     }
 }

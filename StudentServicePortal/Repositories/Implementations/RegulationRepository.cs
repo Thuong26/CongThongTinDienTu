@@ -46,14 +46,14 @@ namespace StudentServicePortal.Repositories
         }
 
         private const string INSERT = @"
-        INSERT INTO QUY_DINH (
-            MaQD, TenQD, MaCB, MaPB, LienKet, LoaiVanBan, 
-            NoiBanHanh, NgayBanHanh, NgayCoHieuLuc, HieuLuc, ThoiGianDang
-        )
-        VALUES (
-            @MaQD, @TenQD, @MaCB, @MaPB, @LienKet, @LoaiVanBan, 
-            @NoiBanHanh, @NgayBanHanh, @NgayCoHieuLuc, @HieuLuc, @ThoiGianDang
-        )";
+            INSERT INTO QUY_DINH (
+                MaQD, TenQD, MaCB, MaPB, LienKet, LoaiVanBan, 
+                NoiBanHanh, NgayBanHanh, NgayCoHieuLuc, HieuLuc, ThoiGianDang
+            )
+            VALUES (
+                @MaQD, @TenQD, @MaCB, @MaPB, @LienKet, @LoaiVanBan, 
+                @NoiBanHanh, @NgayBanHanh, @NgayCoHieuLuc, @HieuLuc, @ThoiGianDang
+            )";
         public async Task<bool> CreateAsync(Regulation regulation)
         {
             var rows = await _dbConnection.ExecuteAsync(INSERT, regulation);
@@ -78,6 +78,17 @@ namespace StudentServicePortal.Repositories
             regulation.MaQD = maQD;
             var rows = await _dbConnection.ExecuteAsync(UPDATE, regulation);
             return rows > 0;
+        }
+
+        public async Task<Regulation> GetLastRegulationAsync()
+        {
+            const string sql = @"
+                SELECT TOP 1 MaQD, TenQD, MaCB, MaPB, LienKet, LoaiVanBan, 
+                       NoiBanHanh, NgayBanHanh, NgayCoHieuLuc, HieuLuc, ThoiGianDang
+                FROM QUY_DINH
+                ORDER BY MaQD DESC";
+
+            return await _dbConnection.QueryFirstOrDefaultAsync<Regulation>(sql);
         }
     }
 }

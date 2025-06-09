@@ -31,6 +31,16 @@ namespace StudentServicePortal.Services
             return await _formRepository.GetPendingFormsAsync();
         }
 
+        public async Task<IEnumerable<RegistrationForm>> GetFormsByDepartmentAsync(string maPB)
+        {
+            return await _formRepository.GetFormsByDepartmentAsync(maPB);
+        }
+
+        public async Task<IEnumerable<RegistrationForm>> GetPendingFormsByDepartmentAsync(string maPB)
+        {
+            return await _formRepository.GetPendingFormsByDepartmentAsync(maPB);
+        }
+
         public async Task<RegistrationForm> GetByFormIdAsync(string maDon)
         {
             return await _formRepository.GetByFormIdAsync(maDon);

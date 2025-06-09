@@ -191,6 +191,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Cấu hình static files để phục vụ file upload
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

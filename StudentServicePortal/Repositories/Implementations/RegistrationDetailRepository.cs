@@ -136,6 +136,59 @@ namespace StudentServicePortal.Repositories.Implementations
             return await _connection.QueryAsync<RegistrationDetail>(sql, new { MaDon = maDon });
         }
 
+        public async Task<IEnumerable<RegistrationDetailWithStudentInfo>> GetDetailsByFormIdWithStudentInfoAsync(string maDon)
+        {
+            const string sql = @"
+                SELECT 
+                    ddkct.MaDonCT,
+                    ddkct.MaDon,
+                    ddk.TenDon,
+                    ddkct.MaSV,
+                    ddkct.HocKyHienTai,
+                    ddkct.NgayTaoDonCT,
+                    ddkct.ThongTinChiTiet,
+                    ddkct.TrangThaiXuLy,
+                    sv.HoTen,
+                    sv.Lop,
+                    sv.Khoa,
+                    sv.Email,
+                    sv.ChuyenNganh,
+                    sv.KhoaHoc
+                FROM DON_DANG_KY_CHI_TIET ddkct
+                LEFT JOIN SINH_VIEN sv ON ddkct.MaSV = sv.MaSV
+                LEFT JOIN DON_DANG_KY ddk ON ddkct.MaDon = ddk.MaDon
+                WHERE ddkct.MaDon = @MaDon
+                ORDER BY ddkct.NgayTaoDonCT DESC";
+
+            return await _connection.QueryAsync<RegistrationDetailWithStudentInfo>(sql, new { MaDon = maDon });
+        }
+
+        public async Task<RegistrationDetailWithStudentInfo> GetDetailByIdWithStudentInfoAsync(string maDonCT)
+        {
+            const string sql = @"
+                SELECT 
+                    ddkct.MaDonCT,
+                    ddkct.MaDon,
+                    ddk.TenDon,
+                    ddkct.MaSV,
+                    ddkct.HocKyHienTai,
+                    ddkct.NgayTaoDonCT,
+                    ddkct.ThongTinChiTiet,
+                    ddkct.TrangThaiXuLy,
+                    sv.HoTen,
+                    sv.Lop,
+                    sv.Khoa,
+                    sv.Email,
+                    sv.ChuyenNganh,
+                    sv.KhoaHoc
+                FROM DON_DANG_KY_CHI_TIET ddkct
+                LEFT JOIN SINH_VIEN sv ON ddkct.MaSV = sv.MaSV
+                LEFT JOIN DON_DANG_KY ddk ON ddkct.MaDon = ddk.MaDon
+                WHERE ddkct.MaDonCT = @MaDonCT";
+
+            return await _connection.QueryFirstOrDefaultAsync<RegistrationDetailWithStudentInfo>(sql, new { MaDonCT = maDonCT });
+        }
+
         public async Task<bool> UpdateStatusByMaDonAsync(string maDon, string newStatus)
         {
             const string sql = @"
