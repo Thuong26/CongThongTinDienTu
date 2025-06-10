@@ -6,6 +6,7 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseAppHost>false</UseAppHost>
 		<Watch>true</Watch>
+		<NoWarn>CS8618;CS8625;CS8600;CS8603;CS8604;CS8619;CS8601;CS8602;CS8613;CS0649;CS1998;CS0168;CS0219</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
