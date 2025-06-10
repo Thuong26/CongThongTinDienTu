@@ -483,7 +483,7 @@ namespace StudentServicePortal.Controllers
                     if (staff != null)
                     {
                         if (string.IsNullOrEmpty(regulation.MaCB))
-                            regulation.MaCB = staff.MaCB;
+                            regulation.MaCB = staff.MSCB;
                         if (string.IsNullOrEmpty(regulation.MaPB))
                             regulation.MaPB = staff.MaPB;
                     }

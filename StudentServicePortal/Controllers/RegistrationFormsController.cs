@@ -80,7 +80,7 @@ namespace StudentServicePortal.Controllers
                     }
                 }
 
-                return ApiResponse(resultList, "Lấy danh sách chi tiết đơn đăng ký thành công");
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(resultList, "Lấy danh sách chi tiết đơn đăng ký thành công");
             }
             catch (Exception ex)
             {
