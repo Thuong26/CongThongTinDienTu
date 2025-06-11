@@ -45,5 +45,10 @@ namespace StudentServicePortal.Services
         {
             return await _formRepository.GetByFormIdAsync(maDon);
         }
+
+        public async Task<bool> DeleteFormAsync(string maDon)
+        {
+            return await _formRepository.DeleteFormAsync(maDon);
+        }
     }
 }

@@ -191,63 +191,7 @@ namespace StudentServicePortal.Controllers
             }
         }
 
-        [HttpGet("forms/by-department/{maPB}")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký theo mã phòng ban", Description = "API trả về danh sách tất cả đơn đăng ký thuộc phòng ban được chỉ định")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
-        [SwaggerResponse(400, "Mã phòng ban không hợp lệ", typeof(ApiResponse<object>))]
-        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetFormsByDepartmentCode(string maPB)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(maPB))
-                {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Mã phòng ban không được rỗng", 400, false);
-                }
 
-                // Lấy danh sách đơn đăng ký theo mã phòng ban
-                var forms = await _formService.GetFormsByDepartmentAsync(maPB);
-                if (forms == null || !forms.Any())
-                {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(forms, $"Không có đơn đăng ký nào trong phòng ban {maPB}", 200, true);
-                }
-
-                return ApiResponse(forms, $"Lấy danh sách đơn đăng ký của phòng ban {maPB} thành công");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IEnumerable<RegistrationForm>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
-            }
-        }
-
-        [HttpGet("forms/by-department/{maPB}/pending")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chờ xử lý theo mã phòng ban", Description = "API trả về danh sách các đơn đăng ký đang chờ xử lý thuộc phòng ban được chỉ định")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
-        [SwaggerResponse(400, "Mã phòng ban không hợp lệ", typeof(ApiResponse<object>))]
-        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetPendingFormsByDepartmentCode(string maPB)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(maPB))
-                {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Mã phòng ban không được rỗng", 400, false);
-                }
-
-                // Lấy danh sách đơn đăng ký chờ xử lý theo mã phòng ban
-                var forms = await _formService.GetPendingFormsByDepartmentAsync(maPB);
-                if (forms == null || !forms.Any())
-                {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(forms, $"Không có đơn đăng ký nào đang chờ xử lý trong phòng ban {maPB}", 200, true);
-                }
-
-                return ApiResponse(forms, $"Lấy danh sách đơn đăng ký chờ xử lý của phòng ban {maPB} thành công");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IEnumerable<RegistrationForm>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
-            }
-        }
         
         [HttpGet("forms/{maDon}")]
         [SwaggerOperation(Summary = "Lấy chi tiết đơn đăng ký theo mã đơn", Description = "API trả về chi tiết các mục trong đơn đăng ký dựa trên mã đơn cung cấp")]
@@ -441,43 +385,52 @@ namespace StudentServicePortal.Controllers
             }
         }
         
-        [HttpPost]
+        [HttpPost("regulations")]
         [SwaggerOperation(Summary = "Tạo mới quy định", Description = "API cho phép cán bộ tạo mới một quy định")]
         [SwaggerResponse(200, "Tạo quy định thành công", typeof(ApiResponse<Regulation>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<Regulation>>> CreateRegulation([FromBody] Regulation regulation)
+        public async Task<ActionResult<ApiResponse<Regulation>>> CreateRegulation([FromBody] CreateRegulationRequest request)
         {
             try
             {
-                if (!ModelState.IsValid)
-                    return ApiResponse<Regulation>(null, ModelState.ToString(), 400, false);
+                if (request == null)
+                    return ApiResponse<Regulation>(null, "Dữ liệu quy định không được rỗng", 400, false);
                     
-                if (regulation == null)
-                    return ApiResponse<Regulation>(null, "Quy định không được rỗng", 400, false);
-                    
-                if (string.IsNullOrEmpty(regulation.TenQD))
+                if (string.IsNullOrWhiteSpace(request.TenQD))
                     return ApiResponse<Regulation>(null, "Tên quy định không được rỗng", 400, false);
 
-                // Tự động tạo mã quy định nếu chưa có
-                if (string.IsNullOrEmpty(regulation.MaQD))
+                if (string.IsNullOrWhiteSpace(request.LoaiVanBan))
+                    return ApiResponse<Regulation>(null, "Loại văn bản không được rỗng", 400, false);
+
+                // Lấy thông tin cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
                 {
-                    regulation.MaQD = await _codeGenerator.GenerateMaQDAsync();
+                    return ApiResponse<Regulation>(null, "Không xác định được cán bộ", 401, false);
                 }
 
-                // Lấy thông tin cán bộ để gán MaCB và MaPB nếu chưa có
-                var maCB = User.FindFirst("MSSV")?.Value;
-                if (!string.IsNullOrEmpty(maCB))
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
                 {
-                    var staff = await _staffService.GetProfileAsync(maCB);
-                    if (staff != null)
-                    {
-                        if (string.IsNullOrEmpty(regulation.MaCB))
-                            regulation.MaCB = staff.MSCB;
-                        if (string.IsNullOrEmpty(regulation.MaPB))
-                            regulation.MaPB = staff.MaPB;
-                    }
+                    return ApiResponse<Regulation>(null, "Không tìm thấy thông tin cán bộ", 404, false);
                 }
+
+                // Tạo đối tượng Regulation từ request
+                var regulation = new Regulation
+                {
+                    MaQD = await _codeGenerator.GenerateMaQDAsync(), // Tự động tạo
+                    TenQD = request.TenQD,
+                    MaCB = staff.MSCB, // Lấy từ token đăng nhập
+                    MaPB = staff.MaPB, // Lấy từ thông tin cán bộ
+                    LienKet = request.LienKet, // Optional
+                    LoaiVanBan = request.LoaiVanBan,
+                    NoiBanHanh = request.NoiBanHanh ?? "", // Optional, default rỗng
+                    NgayBanHanh = request.NgayBanHanh ?? DateTime.Now, // Optional, default hôm nay
+                    NgayCoHieuLuc = request.NgayCoHieuLuc ?? DateTime.Now, // Optional, default hôm nay
+                    HieuLuc = request.HieuLuc ?? true, // Optional, default true
+                    ThoiGianDang = DateTime.Now // Tự động
+                };
 
                 var result = await _regulationService.CreateRegulationAsync(regulation);
                 if (!result)
@@ -760,6 +713,327 @@ namespace StudentServicePortal.Controllers
                 return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
             }
         }
+
+        [HttpPost("registration-forms")]
+        [SwaggerOperation(Summary = "Thêm đơn đăng ký mới", Description = "API cho phép cán bộ tạo mới một đơn đăng ký hoàn chỉnh")]
+        [SwaggerResponse(200, "Tạo đơn đăng ký thành công", typeof(ApiResponse<RegistrationForm>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<RegistrationForm>>> AddNewRegistrationForm([FromBody] CreateRegistrationFormRequest request)
+        {
+            try
+            {
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<RegistrationForm>(null, "Không xác định được cán bộ", 401, false);
+                }
+
+                if (request == null)
+                    return ApiResponse<RegistrationForm>(null, "Dữ liệu đơn đăng ký không được để trống", 400, false);
+
+                // Validate required fields
+                if (string.IsNullOrWhiteSpace(request.TenDon))
+                    return ApiResponse<RegistrationForm>(null, "Tên đơn không được để trống", 400, false);
+
+                if (string.IsNullOrWhiteSpace(request.MaPB))
+                    return ApiResponse<RegistrationForm>(null, "Mã phòng ban không được để trống", 400, false);
+
+                // Lấy thông tin cán bộ để kiểm tra quyền
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<RegistrationForm>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Tạo đối tượng RegistrationForm từ request
+                var newForm = new RegistrationForm
+                {
+                    MaDon = await GenerateMaDonAsync(), // Tự động tạo
+                    MaPB = request.MaPB,
+                    TenDon = request.TenDon,
+                    MaCB = maCB, // Lấy từ token đăng nhập
+                    MaQL = request.MaQL, // Optional, có thể null
+                    ThongTinChiTiet = request.ThongTinChiTiet, // Optional
+                    ThoiGianDang = DateTime.Now, // Tự động
+                    TrangThai = true // Mặc định đang xử lý
+                };
+
+                // Thêm đơn đăng ký mới
+                await _formService.AddForm(newForm);
+
+                return ApiResponse(newForm, "Tạo đơn đăng ký mới thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<RegistrationForm>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
+        [HttpDelete("registration-forms/{maDon}")]
+        [SwaggerOperation(Summary = "Xóa đơn đăng ký", Description = "API cho phép cán bộ xóa một đơn đăng ký đã tạo")]
+        [SwaggerResponse(200, "Xóa đơn đăng ký thành công", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy đơn đăng ký", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteRegistrationForm(string maDon)
+        {
+            try
+            {
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<object>(null, "Không xác định được cán bộ", 401, false);
+                }
+
+                if (string.IsNullOrWhiteSpace(maDon))
+                    return ApiResponse<object>(null, "Mã đơn không được để trống", 400, false);
+
+                // Kiểm tra xem đơn đăng ký có tồn tại không
+                var existingForm = await _formService.GetByFormIdAsync(maDon);
+                if (existingForm == null)
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy đơn đăng ký", 404, false);
+                }
+
+                // Lấy thông tin cán bộ để kiểm tra quyền
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Kiểm tra quyền truy cập - chỉ được xóa đơn thuộc phòng ban của mình
+                if (existingForm.MaPB != staff.MaPB)
+                {
+                    return ApiResponse<object>(null, "Bạn không có quyền xóa đơn này (không thuộc phòng ban của bạn)", 401, false);
+                }
+
+                // Kiểm tra xem đơn có đang được xử lý không (có thể có chi tiết đơn)
+                var allDetails = await _registrationDetailService.GetAllDetailsAsync();
+                var relatedDetails = allDetails.Where(d => d.MaDon == maDon).ToList();
+                
+                if (relatedDetails.Any())
+                {
+                    return ApiResponse<object>(null, "Không thể xóa đơn đăng ký vì đã có sinh viên đăng ký chi tiết", 400, false);
+                }
+
+                // Xóa đơn đăng ký
+                var isDeleted = await _formService.DeleteFormAsync(maDon);
+                if (!isDeleted)
+                {
+                    return ApiResponse<object>(null, "Không thể xóa đơn đăng ký", 500, false);
+                }
+
+                return ApiResponse<object>(null, "Xóa đơn đăng ký thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
+        [HttpDelete("registration-forms/multiple")]
+        [SwaggerOperation(Summary = "Xóa nhiều đơn đăng ký", Description = "API cho phép cán bộ xóa nhiều đơn đăng ký cùng lúc")]
+        [SwaggerResponse(200, "Xóa đơn đăng ký thành công", typeof(ApiResponse<object>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy đơn đăng ký", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteMultipleRegistrationForms([FromBody] DeleteMultipleRegistrationFormsRequest request)
+        {
+            try
+            {
+                if (request == null || request.MaDonList == null || !request.MaDonList.Any())
+                {
+                    return ApiResponse<object>(null, "Danh sách mã đơn không được rỗng", 400, false);
+                }
+
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<object>(null, "Không xác định được cán bộ", 401, false);
+                }
+
+                // Lấy thông tin cán bộ để kiểm tra quyền
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Lấy tất cả đơn đăng ký và lọc ra những đơn thuộc phòng ban của cán bộ
+                var allForms = await _formService.GetAllForms();
+                var departmentForms = allForms.Where(f => f.MaPB == staff.MaPB).ToList();
+                
+                // Kiểm tra quyền xóa và lọc ra những đơn hợp lệ
+                var validFormIds = request.MaDonList
+                    .Where(maDon => departmentForms.Any(f => f.MaDon == maDon))
+                    .ToList();
+
+                if (!validFormIds.Any())
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy đơn đăng ký hợp lệ hoặc bạn không có quyền xóa các đơn này", 404, false);
+                }
+
+                // Kiểm tra xem có đơn nào đã có chi tiết đăng ký không
+                var allDetails = await _registrationDetailService.GetAllDetailsAsync();
+                var formsWithDetails = validFormIds.Where(maDon => 
+                    allDetails.Any(d => d.MaDon == maDon)).ToList();
+
+                if (formsWithDetails.Any())
+                {
+                    return ApiResponse<object>(null, 
+                        $"Không thể xóa một số đơn đăng ký vì đã có sinh viên đăng ký chi tiết. Mã đơn: {string.Join(", ", formsWithDetails)}", 
+                        400, false);
+                }
+
+                // Xóa các đơn đăng ký hợp lệ
+                int deletedCount = 0;
+                var failedDeletions = new List<string>();
+
+                foreach (var maDon in validFormIds)
+                {
+                    var isDeleted = await _formService.DeleteFormAsync(maDon);
+                    if (isDeleted)
+                    {
+                        deletedCount++;
+                    }
+                    else
+                    {
+                        failedDeletions.Add(maDon);
+                    }
+                }
+
+                if (failedDeletions.Any())
+                {
+                    return ApiResponse<object>(null, 
+                        $"Xóa thành công {deletedCount} đơn. Thất bại: {string.Join(", ", failedDeletions)}", 
+                        500, false);
+                }
+
+                var totalRequested = request.MaDonList.Count();
+                var message = deletedCount == totalRequested 
+                    ? $"Xóa thành công {deletedCount} đơn đăng ký"
+                    : $"Xóa thành công {deletedCount}/{totalRequested} đơn đăng ký (một số đơn không tồn tại hoặc không có quyền xóa)";
+
+                return ApiResponse<object>(null, message);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
+        [HttpDelete("regulations/multiple")]
+        [SwaggerOperation(Summary = "Xóa nhiều quy định", Description = "API cho phép cán bộ xóa nhiều quy định cùng lúc")]
+        [SwaggerResponse(200, "Xóa quy định thành công", typeof(ApiResponse<object>))]
+        [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy quy định", typeof(ApiResponse<object>))]
+        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
+        public async Task<ActionResult<ApiResponse<object>>> DeleteMultipleRegulations([FromBody] DeleteMultipleRegulationsRequest request)
+        {
+            try
+            {
+                if (request == null || request.MaQDList == null || !request.MaQDList.Any())
+                {
+                    return ApiResponse<object>(null, "Danh sách mã quy định không được rỗng", 400, false);
+                }
+
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                {
+                    return ApiResponse<object>(null, "Không xác định được cán bộ", 401, false);
+                }
+
+                // Lấy thông tin cán bộ để kiểm tra quyền
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Lấy tất cả quy định và lọc ra những quy định thuộc phòng ban của cán bộ
+                var allRegulations = await _regulationService.GetAllRegulations();
+                var departmentRegulations = allRegulations.Where(r => r.MaPB == staff.MaPB).ToList();
+                
+                // Kiểm tra quyền xóa và lọc ra những quy định hợp lệ
+                var validRegulationIds = request.MaQDList
+                    .Where(maQD => departmentRegulations.Any(r => r.MaQD == maQD))
+                    .ToList();
+
+                if (!validRegulationIds.Any())
+                {
+                    return ApiResponse<object>(null, "Không tìm thấy quy định hợp lệ hoặc bạn không có quyền xóa các quy định này", 404, false);
+                }
+
+                // Xóa các quy định hợp lệ
+                var isDeleted = await _regulationService.DeleteMultipleRegulationsAsync(validRegulationIds);
+                if (!isDeleted)
+                {
+                    return ApiResponse<object>(null, "Không thể xóa quy định", 500, false);
+                }
+
+                var totalRequested = request.MaQDList.Count();
+                var deletedCount = validRegulationIds.Count;
+                var message = deletedCount == totalRequested 
+                    ? $"Xóa thành công {deletedCount} quy định"
+                    : $"Xóa thành công {deletedCount}/{totalRequested} quy định (một số quy định không tồn tại hoặc không có quyền xóa)";
+
+                return ApiResponse<object>(null, message);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+            }
+        }
+
+        private async Task<string> GenerateMaDonAsync()
+        {
+            try
+            {
+                // Lấy tất cả đơn đăng ký để tìm mã cuối cùng
+                var allForms = await _formService.GetAllForms();
+                
+                if (!allForms.Any())
+                {
+                    return "DD001";
+                }
+
+                // Tìm mã đơn lớn nhất
+                var maxMaDon = allForms
+                    .Where(f => f.MaDon.StartsWith("DD") && f.MaDon.Length == 5)
+                    .Select(f => f.MaDon)
+                    .OrderByDescending(x => x)
+                    .FirstOrDefault();
+
+                if (maxMaDon == null)
+                {
+                    return "DD001";
+                }
+
+                // Lấy số từ mã đơn cuối và tăng lên 1
+                string numberPart = maxMaDon.Substring(2);
+                if (int.TryParse(numberPart, out int lastNumber))
+                {
+                    int nextNumber = lastNumber + 1;
+                    return $"DD{nextNumber:D3}";
+                }
+
+                return "DD001";
+            }
+            catch
+            {
+                // Nếu có lỗi, trả về mã mặc định
+                return $"DD{DateTime.Now.Ticks % 1000:D3}";
+            }
+        }
     }
 
     public class FormRequest
@@ -784,5 +1058,34 @@ namespace StudentServicePortal.Controllers
         public DateTime? NgayCoHieuLuc { get; set; }
         public bool? HieuLuc { get; set; }
         public DateTime? ThoiGianDang { get; set; }
+    }
+
+    public class DeleteMultipleRegistrationFormsRequest
+    {
+        public List<string> MaDonList { get; set; }
+    }
+
+    public class CreateRegistrationFormRequest
+    {
+        public string MaPB { get; set; }
+        public string TenDon { get; set; }
+        public string? MaQL { get; set; } // Optional
+        public string? ThongTinChiTiet { get; set; } // Optional
+    }
+
+    public class DeleteMultipleRegulationsRequest
+    {
+        public List<string> MaQDList { get; set; }
+    }
+
+    public class CreateRegulationRequest
+    {
+        public string TenQD { get; set; }
+        public string LoaiVanBan { get; set; }
+        public string? LienKet { get; set; } // Optional
+        public string? NoiBanHanh { get; set; } // Optional
+        public DateTime? NgayBanHanh { get; set; } // Optional, default hôm nay
+        public DateTime? NgayCoHieuLuc { get; set; } // Optional, default hôm nay  
+        public bool? HieuLuc { get; set; } // Optional, default true
     }
 }

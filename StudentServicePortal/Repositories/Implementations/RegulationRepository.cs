@@ -90,5 +90,28 @@ namespace StudentServicePortal.Repositories
 
             return await _dbConnection.QueryFirstOrDefaultAsync<Regulation>(sql);
         }
+
+        private const string DELETE = @"DELETE FROM QUY_DINH WHERE MaQD = @MaQD";
+
+        public async Task<bool> DeleteAsync(string maQD)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaQD", maQD);
+            var rows = await _dbConnection.ExecuteAsync(DELETE, parameters);
+            return rows > 0;
+        }
+
+        public async Task<bool> DeleteMultipleAsync(List<string> maQDList)
+        {
+            if (maQDList == null || !maQDList.Any())
+                return false;
+
+            var sql = "DELETE FROM QUY_DINH WHERE MaQD IN @MaQDList";
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaQDList", maQDList);
+            
+            var rows = await _dbConnection.ExecuteAsync(sql, parameters);
+            return rows > 0;
+        }
     }
 }

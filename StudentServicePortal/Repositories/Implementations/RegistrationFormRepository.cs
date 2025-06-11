@@ -124,5 +124,18 @@ namespace StudentServicePortal.Repositories
 
             return await _dbConnection.QueryFirstOrDefaultAsync<RegistrationForm>(GET_FORM_ID, parameters);
         }
+
+        private const string DELETE_FORM = @"
+        DELETE FROM [dbo].[DON_DANG_KY] 
+        WHERE MaDon = @MaDon";
+
+        public async Task<bool> DeleteFormAsync(string maDon)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaDon", maDon);
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_FORM, parameters);
+            return affectedRows > 0;
+        }
     }
 }

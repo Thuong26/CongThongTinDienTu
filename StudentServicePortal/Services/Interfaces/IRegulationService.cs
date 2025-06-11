@@ -12,5 +12,7 @@ namespace StudentServicePortal.Services
 
         Task<bool> UpdateRegulationAsync(string maQD, Regulation regulation);
         Task<IEnumerable<Regulation>> GetRegulationsByDepartment(string maPB);
+        Task<bool> DeleteRegulationAsync(string maQD);
+        Task<bool> DeleteMultipleRegulationsAsync(List<string> maQDList);
     }
 }
