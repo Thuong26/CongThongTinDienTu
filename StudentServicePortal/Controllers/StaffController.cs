@@ -90,12 +90,12 @@ namespace StudentServicePortal.Controllers
         }
 
         [HttpGet("forms/department")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký theo phòng ban", Description = "API trả về danh sách tất cả đơn đăng ký thuộc phòng ban của cán bộ đang đăng nhập")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
+        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chi tiết theo phòng ban", Description = "API trả về danh sách tất cả đơn đăng ký chi tiết thuộc phòng ban của cán bộ đang đăng nhập, kèm thông tin sinh viên")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>))]
         [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
         [SwaggerResponse(404, "Không tìm thấy thông tin cán bộ", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetFormsByDepartment()
+        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>>> GetFormsByDepartment()
         {
             try
             {
@@ -103,38 +103,49 @@ namespace StudentServicePortal.Controllers
                 var maCB = User.FindFirst("MSSV")?.Value;
                 if (string.IsNullOrEmpty(maCB))
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không xác định được cán bộ", 401, false);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không xác định được cán bộ", 401, false);
                 }
 
                 // Lấy thông tin phòng ban của cán bộ
                 var staff = await _staffService.GetProfileAsync(maCB);
                 if (staff == null)
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
                 }
 
                 // Lấy danh sách đơn đăng ký theo phòng ban
                 var forms = await _formService.GetFormsByDepartmentAsync(staff.MaPB);
                 if (forms == null || !forms.Any())
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(forms, "Không có đơn đăng ký nào trong phòng ban này", 200, true);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(Enumerable.Empty<RegistrationDetailWithStudentInfo>(), "Không có đơn đăng ký nào trong phòng ban này", 200, true);
                 }
 
-                return ApiResponse(forms, "Lấy danh sách đơn đăng ký theo phòng ban thành công");
+                // Lấy chi tiết đơn đăng ký với thông tin sinh viên cho mỗi đơn
+                var detailsList = new List<RegistrationDetailWithStudentInfo>();
+                foreach (var form in forms)
+                {
+                    var details = await _registrationDetailService.GetDetailsByFormIdWithStudentInfoAsync(form.MaDon);
+                    if (details != null && details.Any())
+                    {
+                        detailsList.AddRange(details);
+                    }
+                }
+
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(detailsList, "Lấy danh sách đơn đăng ký chi tiết theo phòng ban thành công");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<RegistrationForm>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
 
         [HttpGet("forms/department/pending")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban", Description = "API trả về danh sách các đơn đăng ký đang chờ xử lý thuộc phòng ban của cán bộ đang đăng nhập")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
+        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chi tiết chờ xử lý theo phòng ban", Description = "API trả về danh sách các đơn đăng ký chi tiết đang chờ xử lý thuộc phòng ban của cán bộ đang đăng nhập, kèm thông tin sinh viên")]
+        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>))]
         [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
         [SwaggerResponse(404, "Không tìm thấy thông tin cán bộ", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetPendingFormsByDepartment()
+        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>>> GetPendingFormsByDepartment()
         {
             try
             {
@@ -142,28 +153,41 @@ namespace StudentServicePortal.Controllers
                 var maCB = User.FindFirst("MSSV")?.Value;
                 if (string.IsNullOrEmpty(maCB))
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không xác định được cán bộ", 401, false);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không xác định được cán bộ", 401, false);
                 }
 
                 // Lấy thông tin phòng ban của cán bộ
                 var staff = await _staffService.GetProfileAsync(maCB);
                 if (staff == null)
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
                 }
 
                 // Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban
-                var forms = await _formService.GetPendingFormsByDepartmentAsync(staff.MaPB);
-                if (forms == null || !forms.Any())
+                var pendingForms = await _formService.GetPendingFormsByDepartmentAsync(staff.MaPB);
+                if (pendingForms == null || !pendingForms.Any())
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(forms, "Không có đơn đăng ký nào đang chờ xử lý trong phòng ban này", 200, true);
+                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(Enumerable.Empty<RegistrationDetailWithStudentInfo>(), "Không có đơn đăng ký nào đang chờ xử lý trong phòng ban này", 200, true);
                 }
 
-                return ApiResponse(forms, "Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban thành công");
+                // Lấy chi tiết đơn đăng ký với thông tin sinh viên cho mỗi đơn pending
+                var detailsList = new List<RegistrationDetailWithStudentInfo>();
+                foreach (var form in pendingForms)
+                {
+                    var details = await _registrationDetailService.GetDetailsByFormIdWithStudentInfoAsync(form.MaDon);
+                    if (details != null && details.Any())
+                    {
+                        // Chỉ lấy những chi tiết đang chờ xử lý
+                        var pendingDetails = details.Where(d => d.TrangThaiXuLy == "Đang xử lý" || d.TrangThaiXuLy == "Chờ xử lý");
+                        detailsList.AddRange(pendingDetails);
+                    }
+                }
+
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(detailsList, "Lấy danh sách đơn đăng ký chi tiết chờ xử lý theo phòng ban thành công");
             }
             catch (Exception ex)
             {
-                return ApiResponse<IEnumerable<RegistrationForm>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
 
@@ -328,12 +352,12 @@ namespace StudentServicePortal.Controllers
         }
 
         [HttpPost("templates")]
-        [SwaggerOperation(Summary = "Tạo mới biểu mẫu", Description = "API cho phép cán bộ tạo mới một biểu mẫu đăng ký với file đính kèm")]
+        [SwaggerOperation(Summary = "Tạo mới biểu mẫu", Description = "API cho phép cán bộ tạo mới một biểu mẫu đăng ký")]
         [SwaggerResponse(200, "Tạo biểu mẫu thành công", typeof(ApiResponse<string>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<string>>> CreateForm([FromForm] FormCreateRequest request)
+        public async Task<ActionResult<ApiResponse<string>>> CreateForm([FromBody] FormRequest request)
         {
             try
             {
@@ -343,19 +367,8 @@ namespace StudentServicePortal.Controllers
                 if (string.IsNullOrEmpty(request.TenBM))
                     return ApiResponse<string>("", "Tên biểu mẫu không được rỗng", 400, false);
 
-                // Kiểm tra file upload
-                if (request.File == null || request.File.Length == 0)
-                    return ApiResponse<string>("", "Vui lòng chọn file để upload", 400, false);
-
-                // Kiểm tra định dạng file (chỉ cho phép PDF, DOC, DOCX)
-                var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
-                var fileExtension = Path.GetExtension(request.File.FileName).ToLowerInvariant();
-                if (!allowedExtensions.Contains(fileExtension))
-                    return ApiResponse<string>("", "Chỉ cho phép upload file PDF, DOC, DOCX", 400, false);
-
-                // Kiểm tra kích thước file (tối đa 10MB)
-                if (request.File.Length > 10 * 1024 * 1024)
-                    return ApiResponse<string>("", "Kích thước file không được vượt quá 10MB", 400, false);
+                if (string.IsNullOrEmpty(request.LienKet))
+                    return ApiResponse<string>("", "Liên kết không được rỗng", 400, false);
 
                 // Lấy mã cán bộ từ token
                 var maCB = User.FindFirst("MSSV")?.Value;
@@ -371,23 +384,6 @@ namespace StudentServicePortal.Controllers
                     return ApiResponse<string>("", "Không tìm thấy thông tin cán bộ", 404, false);
                 }
 
-                // Tạo thư mục lưu file nếu chưa tồn tại
-                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "forms");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
-                }
-
-                // Tạo tên file unique
-                var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
-
-                // Lưu file vào server
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await request.File.CopyToAsync(fileStream);
-                }
-
                 // Tạo đối tượng Form từ request
                 var form = new Form
                 {
@@ -395,7 +391,7 @@ namespace StudentServicePortal.Controllers
                     MaCB = maCB,
                     MaPB = staff.MaPB,
                     TenBM = request.TenBM,
-                    LienKet = $"/uploads/forms/{fileName}", // Lưu đường dẫn file
+                    LienKet = request.LienKet,
                     ThoiGianDang = DateTime.Now // Lấy thời gian hiện tại
                 };
 
@@ -403,12 +399,6 @@ namespace StudentServicePortal.Controllers
 
                 if (success)
                     return ApiResponse("", "Tạo biểu mẫu thành công");
-
-                // Nếu tạo thất bại, xóa file đã upload
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
 
                 return ApiResponse<string>("", "Tạo biểu mẫu thất bại", 500, false);
             }
@@ -476,10 +466,10 @@ namespace StudentServicePortal.Controllers
                 }
 
                 // Lấy thông tin cán bộ để gán MaCB và MaPB nếu chưa có
-                var staffId = User.FindFirst("StaffId")?.Value;
-                if (!string.IsNullOrEmpty(staffId))
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (!string.IsNullOrEmpty(maCB))
                 {
-                    var staff = await _staffService.GetProfileAsync(staffId);
+                    var staff = await _staffService.GetProfileAsync(maCB);
                     if (staff != null)
                     {
                         if (string.IsNullOrEmpty(regulation.MaCB))
@@ -505,12 +495,12 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("{maQD}")]
-        [SwaggerOperation(Summary = "Cập nhật quy định", Description = "API cho phép cán bộ cập nhật thông tin một quy định")]
+        [SwaggerOperation(Summary = "Cập nhật quy định", Description = "API cho phép cán bộ cập nhật thông tin một quy định (chỉ các trường được phép)")]
         [SwaggerResponse(200, "Cập nhật quy định thành công", typeof(ApiResponse<Regulation>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(404, "Không tìm thấy quy định", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<Regulation>>> UpdateRegulation(string maQD, [FromBody] Regulation regulation)
+        public async Task<ActionResult<ApiResponse<Regulation>>> UpdateRegulation(string maQD, [FromBody] RegulationUpdateRequest request)
         {
             if (string.IsNullOrEmpty(maQD))
             {
@@ -522,15 +512,31 @@ namespace StudentServicePortal.Controllers
                 if (!ModelState.IsValid)
                     return ApiResponse<Regulation>(null, ModelState.ToString(), 400, false);
                     
-                if (regulation == null)
-                    return ApiResponse<Regulation>(null, "Quy định không được rỗng", 400, false);
+                if (request == null)
+                    return ApiResponse<Regulation>(null, "Dữ liệu cập nhật không được rỗng", 400, false);
                     
-                if (string.IsNullOrEmpty(regulation.TenQD))
+                if (string.IsNullOrEmpty(request.TenQD))
                     return ApiResponse<Regulation>(null, "Tên quy định không được rỗng", 400, false);
 
-                var result = await _regulationService.UpdateRegulationAsync(maQD, regulation);
+                // Lấy quy định hiện tại
+                var existingRegulation = await _regulationService.GetRegulationById(maQD);
+                if (existingRegulation == null)
+                    return ApiResponse<Regulation>(null, "Không tìm thấy quy định", 404, false);
+
+                // Chỉ cập nhật các trường được phép
+                existingRegulation.MaQD = request.MaQD ?? existingRegulation.MaQD;
+                existingRegulation.TenQD = request.TenQD;
+                existingRegulation.MaCB = request.MaCB ?? existingRegulation.MaCB;
+                existingRegulation.LienKet = request.LienKet ?? existingRegulation.LienKet;
+                existingRegulation.NgayBanHanh = request.NgayBanHanh ?? existingRegulation.NgayBanHanh;
+                existingRegulation.NgayCoHieuLuc = request.NgayCoHieuLuc ?? existingRegulation.NgayCoHieuLuc;
+                existingRegulation.HieuLuc = request.HieuLuc ?? existingRegulation.HieuLuc;
+                existingRegulation.ThoiGianDang = request.ThoiGianDang ?? existingRegulation.ThoiGianDang;
+                // MaPB không được phép cập nhật
+
+                var result = await _regulationService.UpdateRegulationAsync(maQD, existingRegulation);
                 if (!result)
-                    return ApiResponse<Regulation>(null, "Không tìm thấy hoặc cập nhật thất bại.", 404, false);
+                    return ApiResponse<Regulation>(null, "Cập nhật thất bại", 500, false);
 
                 // Lấy lại quy định vừa cập nhật với thông tin đầy đủ (bao gồm TenPB)
                 var updatedRegulation = await _regulationService.GetRegulationById(maQD);
@@ -680,14 +686,14 @@ namespace StudentServicePortal.Controllers
         {
             try
             {
-                // Lấy mã phòng ban từ token
-                var staffId = User.FindFirst("StaffId")?.Value;
-                if (string.IsNullOrEmpty(staffId))
-                    return ApiResponse<IEnumerable<Regulation>>(null, "Không tìm thấy thông tin cán bộ", 400, false);
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
+                    return ApiResponse<IEnumerable<Regulation>>(null, "Không xác định được cán bộ", 401, false);
 
-                var staff = await _staffService.GetProfileAsync(staffId);
+                var staff = await _staffService.GetProfileAsync(maCB);
                 if (staff == null)
-                    return ApiResponse<IEnumerable<Regulation>>(null, "Không tìm thấy thông tin cán bộ", 400, false);
+                    return ApiResponse<IEnumerable<Regulation>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
 
                 var regulations = await _regulationService.GetRegulationsByDepartment(staff.MaPB);
                 return ApiResponse(regulations, "Lấy danh sách quy định thành công");
@@ -766,5 +772,17 @@ namespace StudentServicePortal.Controllers
     {
         public string TenBM { get; set; }
         public IFormFile File { get; set; }
+    }
+
+    public class RegulationUpdateRequest
+    {
+        public string? MaQD { get; set; }
+        public string TenQD { get; set; }
+        public string? MaCB { get; set; }
+        public string? LienKet { get; set; }
+        public DateTime? NgayBanHanh { get; set; }
+        public DateTime? NgayCoHieuLuc { get; set; }
+        public bool? HieuLuc { get; set; }
+        public DateTime? ThoiGianDang { get; set; }
     }
 }
