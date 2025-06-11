@@ -69,19 +69,37 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpGet("forms")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chờ xử lý", Description = "API trả về danh sách các đơn đăng ký đang chờ cán bộ xử lý")]
+        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban", Description = "API trả về danh sách các đơn đăng ký đang chờ xử lý thuộc phòng ban của cán bộ đang đăng nhập")]
         [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationForm>>))]
+        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy thông tin cán bộ", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
         public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationForm>>>> GetPendingForms()
         {
             try
             {
-                var forms = await _formService.GetPendingFormsAsync();
-                if (forms == null || !forms.Any())
+                // Lấy mã cán bộ từ token
+                var maCB = User.FindFirst("MSSV")?.Value;
+                if (string.IsNullOrEmpty(maCB))
                 {
-                    return ApiResponse<IEnumerable<RegistrationForm>>(forms, "Không có đơn đăng ký nào đang chờ xử lý", 200, true);
+                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không xác định được cán bộ", 401, false);
                 }
-                return ApiResponse(forms);
+
+                // Lấy thông tin phòng ban của cán bộ
+                var staff = await _staffService.GetProfileAsync(maCB);
+                if (staff == null)
+                {
+                    return ApiResponse<IEnumerable<RegistrationForm>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban
+                var pendingForms = await _formService.GetPendingFormsByDepartmentAsync(staff.MaPB);
+                if (pendingForms == null || !pendingForms.Any())
+                {
+                    return ApiResponse<IEnumerable<RegistrationForm>>(Enumerable.Empty<RegistrationForm>(), "Không có đơn đăng ký nào đang chờ xử lý trong phòng ban này", 200, true);
+                }
+                
+                return ApiResponse(pendingForms, "Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban thành công");
             }
             catch (Exception ex)
             {
@@ -138,59 +156,6 @@ namespace StudentServicePortal.Controllers
                 return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
-
-        [HttpGet("forms/department/pending")]
-        [SwaggerOperation(Summary = "Lấy danh sách đơn đăng ký chi tiết chờ xử lý theo phòng ban", Description = "API trả về danh sách các đơn đăng ký chi tiết đang chờ xử lý thuộc phòng ban của cán bộ đang đăng nhập, kèm thông tin sinh viên")]
-        [SwaggerResponse(200, "Lấy danh sách thành công", typeof(ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>))]
-        [SwaggerResponse(401, "Không có quyền truy cập", typeof(ApiResponse<object>))]
-        [SwaggerResponse(404, "Không tìm thấy thông tin cán bộ", typeof(ApiResponse<object>))]
-        [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>>> GetPendingFormsByDepartment()
-        {
-            try
-            {
-                // Lấy mã cán bộ từ token
-                var maCB = User.FindFirst("MSSV")?.Value;
-                if (string.IsNullOrEmpty(maCB))
-                {
-                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không xác định được cán bộ", 401, false);
-                }
-
-                // Lấy thông tin phòng ban của cán bộ
-                var staff = await _staffService.GetProfileAsync(maCB);
-                if (staff == null)
-                {
-                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, "Không tìm thấy thông tin cán bộ", 404, false);
-                }
-
-                // Lấy danh sách đơn đăng ký chờ xử lý theo phòng ban
-                var pendingForms = await _formService.GetPendingFormsByDepartmentAsync(staff.MaPB);
-                if (pendingForms == null || !pendingForms.Any())
-                {
-                    return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(Enumerable.Empty<RegistrationDetailWithStudentInfo>(), "Không có đơn đăng ký nào đang chờ xử lý trong phòng ban này", 200, true);
-                }
-
-                // Lấy chi tiết đơn đăng ký với thông tin sinh viên cho mỗi đơn pending
-                var detailsList = new List<RegistrationDetailWithStudentInfo>();
-                foreach (var form in pendingForms)
-                {
-                    var details = await _registrationDetailService.GetDetailsByFormIdWithStudentInfoAsync(form.MaDon);
-                    if (details != null && details.Any())
-                    {
-                        // Chỉ lấy những chi tiết đang chờ xử lý
-                        var pendingDetails = details.Where(d => d.TrangThaiXuLy == "Đang xử lý" || d.TrangThaiXuLy == "Chờ xử lý");
-                        detailsList.AddRange(pendingDetails);
-                    }
-                }
-
-                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(detailsList, "Lấy danh sách đơn đăng ký chi tiết chờ xử lý theo phòng ban thành công");
-            }
-            catch (Exception ex)
-            {
-                return ApiResponse<IEnumerable<RegistrationDetailWithStudentInfo>>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
-            }
-        }
-
 
         
         [HttpGet("forms/{maDon}")]
