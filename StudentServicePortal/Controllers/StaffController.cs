@@ -190,20 +190,20 @@ namespace StudentServicePortal.Controllers
         
         [HttpPut("forms/{maDonCT}/status")]
         [SwaggerOperation(Summary = "Cập nhật trạng thái đơn đăng ký chi tiết", Description = "API cho phép cán bộ cập nhật trạng thái xử lý của đơn đăng ký chi tiết")]
-        [SwaggerResponse(200, "Cập nhật trạng thái thành công", typeof(ApiResponse<string>))]
+        [SwaggerResponse(200, "Cập nhật trạng thái thành công", typeof(ApiResponse<UpdateStatusResponse>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(404, "Không tìm thấy đơn đăng ký chi tiết", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<string>>> UpdateFormStatus(string maDonCT, [FromBody] UpdateFormStatusRequest request)
+        public async Task<ActionResult<ApiResponse<UpdateStatusResponse>>> UpdateFormStatus(string maDonCT, [FromBody] UpdateFormStatusRequest request)
         {
             if (string.IsNullOrEmpty(maDonCT))
             {
-                return ApiResponse<string>("", "Mã đơn chi tiết không hợp lệ", 400, false);
+                return ApiResponse<UpdateStatusResponse>(null, "Mã đơn chi tiết không hợp lệ", 400, false);
             }
             
             if (request == null || string.IsNullOrEmpty(request.TrangThaiXuLy))
             {
-                return ApiResponse<string>("", "Trạng thái xử lý không hợp lệ", 400, false);
+                return ApiResponse<UpdateStatusResponse>(null, "Trạng thái xử lý không hợp lệ", 400, false);
             }
             
             try
@@ -212,16 +212,25 @@ namespace StudentServicePortal.Controllers
                 var detail = allDetails.FirstOrDefault(d => d.MaDonCT == maDonCT);
 
                 if (detail == null)
-                    return ApiResponse<string>("", $"Không tìm thấy đơn chi tiết có mã {maDonCT}", 404, false);
+                    return ApiResponse<UpdateStatusResponse>(null, $"Không tìm thấy đơn chi tiết có mã {maDonCT}", 404, false);
 
                 detail.TrangThaiXuLy = request.TrangThaiXuLy;
                 await _registrationDetailService.UpdateDetailAsync(detail);
 
-                return ApiResponse("", "Cập nhật trạng thái thành công.");
+                // Tạo response object với thông tin chi tiết
+                var response = new UpdateStatusResponse
+                {
+                    MaDonCT = detail.MaDonCT,
+                    MaDon = detail.MaDon,
+                    TrangThaiXuLy = detail.TrangThaiXuLy,
+                    ThoiGianCapNhat = DateTime.Now
+                };
+
+                return ApiResponse(response, "Cập nhật trạng thái thành công.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<string>("", $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<UpdateStatusResponse>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
 
@@ -419,7 +428,7 @@ namespace StudentServicePortal.Controllers
                     MaPB = staff.MaPB, // Lấy từ thông tin cán bộ
                     LienKet = request.LienKet, // Optional
                     LoaiVanBan = request.LoaiVanBan,
-                    NoiBanHanh = request.NoiBanHanh ?? "", // Optional, default rỗng
+                    NoiBanHanh = "", // Để trống vì đã bỏ từ request
                     NgayBanHanh = request.NgayBanHanh ?? DateTime.Now, // Optional, default hôm nay
                     NgayCoHieuLuc = request.NgayCoHieuLuc ?? DateTime.Now, // Optional, default hôm nay
                     HieuLuc = request.HieuLuc ?? true, // Optional, default true
@@ -1096,7 +1105,6 @@ namespace StudentServicePortal.Controllers
         public string TenQD { get; set; }
         public string LoaiVanBan { get; set; }
         public string? LienKet { get; set; } // Optional
-        public string? NoiBanHanh { get; set; } // Optional
         public DateTime? NgayBanHanh { get; set; } // Optional, default hôm nay
         public DateTime? NgayCoHieuLuc { get; set; } // Optional, default hôm nay  
         public bool? HieuLuc { get; set; } // Optional, default true
@@ -1111,5 +1119,13 @@ namespace StudentServicePortal.Controllers
         public DateTime NgayBanHanh { get; set; }
         public DateTime NgayCoHieuLuc { get; set; }
         public bool HieuLuc { get; set; }
+    }
+
+    public class UpdateStatusResponse
+    {
+        public string MaDonCT { get; set; }
+        public string MaDon { get; set; }
+        public string TrangThaiXuLy { get; set; }
+        public DateTime ThoiGianCapNhat { get; set; }
     }
 }
