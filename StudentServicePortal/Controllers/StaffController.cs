@@ -188,17 +188,17 @@ namespace StudentServicePortal.Controllers
             }
         }
         
-        [HttpPut("forms/{maDon}/status")]
-        [SwaggerOperation(Summary = "Cập nhật trạng thái đơn đăng ký", Description = "API cho phép cán bộ cập nhật trạng thái xử lý của đơn đăng ký")]
+        [HttpPut("forms/{maDonCT}/status")]
+        [SwaggerOperation(Summary = "Cập nhật trạng thái đơn đăng ký chi tiết", Description = "API cho phép cán bộ cập nhật trạng thái xử lý của đơn đăng ký chi tiết")]
         [SwaggerResponse(200, "Cập nhật trạng thái thành công", typeof(ApiResponse<string>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
-        [SwaggerResponse(404, "Không tìm thấy đơn đăng ký", typeof(ApiResponse<object>))]
+        [SwaggerResponse(404, "Không tìm thấy đơn đăng ký chi tiết", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<string>>> UpdateFormStatus(string maDon, [FromBody] UpdateFormStatusRequest request)
+        public async Task<ActionResult<ApiResponse<string>>> UpdateFormStatus(string maDonCT, [FromBody] UpdateFormStatusRequest request)
         {
-            if (string.IsNullOrEmpty(maDon))
+            if (string.IsNullOrEmpty(maDonCT))
             {
-                return ApiResponse<string>("", "Mã đơn không hợp lệ", 400, false);
+                return ApiResponse<string>("", "Mã đơn chi tiết không hợp lệ", 400, false);
             }
             
             if (request == null || string.IsNullOrEmpty(request.TrangThaiXuLy))
@@ -209,10 +209,10 @@ namespace StudentServicePortal.Controllers
             try
             {
                 var allDetails = await _registrationDetailService.GetAllDetailsAsync();
-                var detail = allDetails.FirstOrDefault(d => d.MaDon == maDon);
+                var detail = allDetails.FirstOrDefault(d => d.MaDonCT == maDonCT);
 
                 if (detail == null)
-                    return ApiResponse<string>("", $"Không tìm thấy đơn có mã {maDon}", 404, false);
+                    return ApiResponse<string>("", $"Không tìm thấy đơn chi tiết có mã {maDonCT}", 404, false);
 
                 detail.TrangThaiXuLy = request.TrangThaiXuLy;
                 await _registrationDetailService.UpdateDetailAsync(detail);
@@ -318,12 +318,12 @@ namespace StudentServicePortal.Controllers
         }
         
         [HttpPut("templates/{maBM}")]
-        [SwaggerOperation(Summary = "Cập nhật biểu mẫu", Description = "API cho phép cán bộ cập nhật thông tin một biểu mẫu đăng ký")]
+        [SwaggerOperation(Summary = "Cập nhật biểu mẫu", Description = "API cho phép cán bộ cập nhật thông tin một biểu mẫu đăng ký (chỉ các trường được phép)")]
         [SwaggerResponse(200, "Cập nhật biểu mẫu thành công", typeof(ApiResponse<string>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(404, "Không tìm thấy biểu mẫu", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<string>>> UpdateForm(string maBM, [FromBody] Form form)
+        public async Task<ActionResult<ApiResponse<string>>> UpdateForm(string maBM, [FromBody] FormUpdateRequest request)
         {
             if (string.IsNullOrEmpty(maBM))
             {
@@ -332,15 +332,26 @@ namespace StudentServicePortal.Controllers
             
             try
             {
-                if (form == null)
-                    return ApiResponse<string>("", "Biểu mẫu không được rỗng", 400, false);
+                if (request == null)
+                    return ApiResponse<string>("", "Dữ liệu cập nhật không được rỗng", 400, false);
                     
-                if (string.IsNullOrEmpty(form.TenBM))
+                if (string.IsNullOrEmpty(request.TenBM))
                     return ApiResponse<string>("", "Tên biểu mẫu không được rỗng", 400, false);
+
+                // Lấy biểu mẫu hiện tại
+                var existingForms = await _formService2.GetAllForms();
+                var existingForm = existingForms.FirstOrDefault(f => f.MaBM == maBM);
+                if (existingForm == null)
+                    return ApiResponse<string>("", "Không tìm thấy biểu mẫu", 404, false);
+
+                // Chỉ cập nhật các trường được phép
+                existingForm.TenBM = request.TenBM;
+                existingForm.LienKet = request.LienKet ?? existingForm.LienKet;
+                // MaBM, MaCB, MaPB, ThoiGianDang không được phép cập nhật
                     
-                var success = await _formService2.UpdateFormAsync(maBM, form);
+                var success = await _formService2.UpdateFormAsync(maBM, existingForm);
                 if (!success)
-                    return ApiResponse<string>("", "Biểu mẫu không tồn tại hoặc cập nhật thất bại.", 404, false);
+                    return ApiResponse<string>("", "Cập nhật biểu mẫu thất bại", 500, false);
 
                 return ApiResponse("", "Cập nhật biểu mẫu thành công.");
             }
@@ -352,39 +363,57 @@ namespace StudentServicePortal.Controllers
         
         [HttpPost("regulations")]
         [SwaggerOperation(Summary = "Tạo mới quy định", Description = "API cho phép cán bộ tạo mới một quy định")]
-        [SwaggerResponse(200, "Tạo quy định thành công", typeof(ApiResponse<Regulation>))]
+        [SwaggerResponse(200, "Tạo quy định thành công", typeof(ApiResponse<RegulationResponse>))]
         [SwaggerResponse(400, "Dữ liệu không hợp lệ", typeof(ApiResponse<object>))]
         [SwaggerResponse(500, "Lỗi hệ thống", typeof(ApiResponse<object>))]
-        public async Task<ActionResult<ApiResponse<Regulation>>> CreateRegulation([FromBody] CreateRegulationRequest request)
+        public async Task<ActionResult<ApiResponse<RegulationResponse>>> CreateRegulation([FromBody] CreateRegulationRequest request)
         {
             try
             {
                 if (request == null)
-                    return ApiResponse<Regulation>(null, "Dữ liệu quy định không được rỗng", 400, false);
+                    return ApiResponse<RegulationResponse>(null, "Dữ liệu quy định không được rỗng", 400, false);
                     
                 if (string.IsNullOrWhiteSpace(request.TenQD))
-                    return ApiResponse<Regulation>(null, "Tên quy định không được rỗng", 400, false);
+                    return ApiResponse<RegulationResponse>(null, "Tên quy định không được rỗng", 400, false);
 
                 if (string.IsNullOrWhiteSpace(request.LoaiVanBan))
-                    return ApiResponse<Regulation>(null, "Loại văn bản không được rỗng", 400, false);
+                    return ApiResponse<RegulationResponse>(null, "Loại văn bản không được rỗng", 400, false);
 
                 // Lấy thông tin cán bộ từ token
                 var maCB = User.FindFirst("MSSV")?.Value;
                 if (string.IsNullOrEmpty(maCB))
                 {
-                    return ApiResponse<Regulation>(null, "Không xác định được cán bộ", 401, false);
+                    return ApiResponse<RegulationResponse>(null, "Không xác định được cán bộ", 401, false);
                 }
 
                 var staff = await _staffService.GetProfileAsync(maCB);
                 if (staff == null)
                 {
-                    return ApiResponse<Regulation>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                    return ApiResponse<RegulationResponse>(null, "Không tìm thấy thông tin cán bộ", 404, false);
+                }
+
+                // Xử lý mã quy định
+                string maQD;
+                if (!string.IsNullOrWhiteSpace(request.MaQD))
+                {
+                    // Kiểm tra trùng lặp mã quy định
+                    var existingRegulation = await _regulationService.GetRegulationById(request.MaQD);
+                    if (existingRegulation != null)
+                    {
+                        return ApiResponse<RegulationResponse>(null, $"Mã quy định '{request.MaQD}' đã tồn tại", 400, false);
+                    }
+                    maQD = request.MaQD;
+                }
+                else
+                {
+                    // Tự động tạo mã nếu không được cung cấp
+                    maQD = await _codeGenerator.GenerateMaQDAsync();
                 }
 
                 // Tạo đối tượng Regulation từ request
                 var regulation = new Regulation
                 {
-                    MaQD = await _codeGenerator.GenerateMaQDAsync(), // Tự động tạo
+                    MaQD = maQD,
                     TenQD = request.TenQD,
                     MaCB = staff.MSCB, // Lấy từ token đăng nhập
                     MaPB = staff.MaPB, // Lấy từ thông tin cán bộ
@@ -399,16 +428,25 @@ namespace StudentServicePortal.Controllers
 
                 var result = await _regulationService.CreateRegulationAsync(regulation);
                 if (!result)
-                    return ApiResponse<Regulation>(null, "Tạo quy định thất bại.", 500, false);
+                    return ApiResponse<RegulationResponse>(null, "Tạo quy định thất bại.", 500, false);
 
-                // Lấy lại quy định vừa tạo với thông tin đầy đủ (bao gồm TenPB)
-                var createdRegulation = await _regulationService.GetRegulationById(regulation.MaQD);
+                // Tạo response object chỉ chứa các trường cần thiết
+                var response = new RegulationResponse
+                {
+                    MaQD = regulation.MaQD,
+                    TenQD = regulation.TenQD,
+                    LienKet = regulation.LienKet,
+                    LoaiVanBan = regulation.LoaiVanBan,
+                    NgayBanHanh = regulation.NgayBanHanh,
+                    NgayCoHieuLuc = regulation.NgayCoHieuLuc,
+                    HieuLuc = regulation.HieuLuc
+                };
                 
-                return ApiResponse(createdRegulation, "Tạo quy định thành công.");
+                return ApiResponse(response, "Tạo quy định thành công.");
             }
             catch (Exception ex)
             {
-                return ApiResponse<Regulation>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
+                return ApiResponse<RegulationResponse>(null, $"Lỗi hệ thống: {ex.Message}", 500, false);
             }
         }
         
@@ -446,6 +484,7 @@ namespace StudentServicePortal.Controllers
                 existingRegulation.TenQD = request.TenQD;
                 existingRegulation.MaCB = request.MaCB ?? existingRegulation.MaCB;
                 existingRegulation.LienKet = request.LienKet ?? existingRegulation.LienKet;
+                existingRegulation.LoaiVanBan = request.LoaiVanBan ?? existingRegulation.LoaiVanBan;
                 existingRegulation.NgayBanHanh = request.NgayBanHanh ?? existingRegulation.NgayBanHanh;
                 existingRegulation.NgayCoHieuLuc = request.NgayCoHieuLuc ?? existingRegulation.NgayCoHieuLuc;
                 existingRegulation.HieuLuc = request.HieuLuc ?? existingRegulation.HieuLuc;
@@ -1007,6 +1046,13 @@ namespace StudentServicePortal.Controllers
         public string LienKet { get; set; }
     }
 
+    public class FormUpdateRequest
+    {
+        public string TenBM { get; set; }
+        public string? LienKet { get; set; } // Optional
+        // Lưu ý: MaBM, MaCB, MaPB, ThoiGianDang không được phép cập nhật
+    }
+
     public class FormCreateRequest
     {
         public string TenBM { get; set; }
@@ -1019,6 +1065,7 @@ namespace StudentServicePortal.Controllers
         public string TenQD { get; set; }
         public string? MaCB { get; set; }
         public string? LienKet { get; set; }
+        public string? LoaiVanBan { get; set; }
         public DateTime? NgayBanHanh { get; set; }
         public DateTime? NgayCoHieuLuc { get; set; }
         public bool? HieuLuc { get; set; }
@@ -1045,6 +1092,7 @@ namespace StudentServicePortal.Controllers
 
     public class CreateRegulationRequest
     {
+        public string? MaQD { get; set; } // Optional - nếu không có sẽ tự động tạo
         public string TenQD { get; set; }
         public string LoaiVanBan { get; set; }
         public string? LienKet { get; set; } // Optional
@@ -1052,5 +1100,16 @@ namespace StudentServicePortal.Controllers
         public DateTime? NgayBanHanh { get; set; } // Optional, default hôm nay
         public DateTime? NgayCoHieuLuc { get; set; } // Optional, default hôm nay  
         public bool? HieuLuc { get; set; } // Optional, default true
+    }
+
+    public class RegulationResponse
+    {
+        public string MaQD { get; set; }
+        public string TenQD { get; set; }
+        public string? LienKet { get; set; }
+        public string LoaiVanBan { get; set; }
+        public DateTime NgayBanHanh { get; set; }
+        public DateTime NgayCoHieuLuc { get; set; }
+        public bool HieuLuc { get; set; }
     }
 }
