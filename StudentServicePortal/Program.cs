@@ -54,24 +54,23 @@ builder.Services.AddScoped<IStudentService, StudentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddTransient<IRegistrationFormRepository, RegistrationFormRepository>();
-builder.Services.AddTransient<IRegistrationFormService, RegistrationFormService>();
+builder.Services.AddScoped<ICodeGeneratorService, CodeGeneratorService>();
+builder.Services.AddScoped<IRegistrationFormRepository, RegistrationFormRepository>();
+builder.Services.AddScoped<IRegistrationFormService, RegistrationFormService>();
+builder.Services.AddScoped<IRegistrationDetailRepository, RegistrationDetailRepository>();
+builder.Services.AddScoped<IRegistrationDetailService, RegistrationDetailService>();
 builder.Services.AddScoped<IFormRepository, FormRepository>();
 builder.Services.AddScoped<IFormService, FormService>();
 builder.Services.AddScoped<IRegulationRepository, RegulationRepository>();
 builder.Services.AddScoped<IRegulationService, RegulationService>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
-builder.Services.AddScoped<IRegistrationDetailRepository, RegistrationDetailRepository>();
-builder.Services.AddScoped<IRegistrationDetailService, RegistrationDetailService>();
-builder.Services.AddScoped<IStaffRepository, StaffRepository>();
-builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IReportService, ReportService>();
-
-
+builder.Services.AddScoped<IIntroductionRepository, IntroductionRepository>();
+builder.Services.AddScoped<IIntroductionService, IntroductionService>();
 
 // Cấu hình JWT
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
@@ -169,34 +168,33 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowNgrok", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:3000",
-            "https://8936-123-19-224-121.ngrok-free.app/"
-        )
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        policy
+            .SetIsOriginAllowed(origin =>
+                origin == "http://localhost:3000" || 
+                origin.Contains(".ngrok-free.app"))
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
 var app = builder.Build();
 
-// Middleware xử lý lỗi toàn cục
-app.UseMiddleware<ErrorHandlingMiddleware>();
-
-// CORS
-app.UseCors("AllowAll");
-
 app.UseCors("AllowNgrok");
 
-// Swagger
+app.UseMiddleware<ErrorHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// HTTPS và xác thực
 app.UseHttpsRedirection();
+
+// Cấu hình static files để phục vụ file upload
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

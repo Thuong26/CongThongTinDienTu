@@ -15,9 +15,15 @@ namespace StudentServicePortal.Repositories
         }
 
         private const string GET_ALL_FORMS = @"
-            SELECT MaBM, MaCB, MaPB, TenBM, LienKet, ThoiGianDang 
-            FROM [dbo].[BIEU_MAU]";
-        private const string GET_FORM_BY_ID = "SELECT * FROM BIEU_MAU WHERE MaBM = @MaBM";
+            SELECT bm.MaBM, bm.MaCB, bm.MaPB, bm.TenBM, bm.LienKet, bm.ThoiGianDang, pb.TenPB 
+            FROM [dbo].[BIEU_MAU] bm
+            LEFT JOIN [dbo].[PHONG_BAN] pb ON bm.MaPB = pb.MaPB
+            ORDER BY bm.ThoiGianDang DESC";
+        private const string GET_FORM_BY_ID = @"
+            SELECT bm.*, pb.TenPB
+            FROM BIEU_MAU bm
+            LEFT JOIN PHONG_BAN pb ON bm.MaPB = pb.MaPB
+            WHERE bm.MaBM = @MaBM";
         private const string INSERT_FORM = @"
         INSERT INTO BIEU_MAU (MaBM, MaCB, MaPB, TenBM, LienKet, ThoiGianDang)
         VALUES (@MaBM, @MaCB, @MaPB, @TenBM, @LienKet, @ThoiGianDang)";
@@ -26,6 +32,10 @@ namespace StudentServicePortal.Repositories
         SET MaCB = @MaCB, MaPB = @MaPB, TenBM = @TenBM, 
             LienKet = @LienKet, ThoiGianDang = @ThoiGianDang
         WHERE MaBM = @MaBM";
+        private const string DELETE_FORM = @"
+        DELETE FROM BIEU_MAU 
+        WHERE MaBM = @MaBM";
+
         public async Task<IEnumerable<Form>> GetAllForms()
         {
             return await _dbConnection.QueryAsync<Form>(GET_ALL_FORMS);
@@ -47,7 +57,6 @@ namespace StudentServicePortal.Repositories
             return result > 0;
         }
 
-
         public async Task<bool> UpdateAsync(string maBM, Form form)
         {
             form.ThoiGianDang = DateTime.Now;
@@ -62,6 +71,32 @@ namespace StudentServicePortal.Repositories
             };
 
             var affectedRows = await _dbConnection.ExecuteAsync(UPDATE_FORM, parameters);
+            return affectedRows > 0;
+        }
+
+        public async Task<bool> DeleteFormAsync(string maBM)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaBM", maBM);
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_FORM, parameters);
+            return affectedRows > 0;
+        }
+
+        public async Task<bool> DeleteMultipleFormsAsync(IEnumerable<string> maBMList)
+        {
+            if (maBMList == null || !maBMList.Any())
+                return false;
+
+            var maBMArray = maBMList.ToArray();
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaBMList", maBMArray);
+
+            const string DELETE_MULTIPLE_FORMS = @"
+            DELETE FROM BIEU_MAU 
+            WHERE MaBM IN @MaBMList";
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_MULTIPLE_FORMS, parameters);
             return affectedRows > 0;
         }
     }

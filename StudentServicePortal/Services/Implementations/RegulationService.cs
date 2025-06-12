@@ -32,5 +32,20 @@ namespace StudentServicePortal.Services
             regulation.ThoiGianDang = DateTime.Now;
             return await _regulationRepository.UpdateAsync(maQD, regulation);
         }
+
+        public async Task<IEnumerable<Regulation>> GetRegulationsByDepartment(string maPB)
+        {
+            return await _regulationRepository.GetRegulationsByDepartment(maPB);
+        }
+
+        public async Task<bool> DeleteRegulationAsync(string maQD)
+        {
+            return await _regulationRepository.DeleteAsync(maQD);
+        }
+
+        public async Task<bool> DeleteMultipleRegulationsAsync(List<string> maQDList)
+        {
+            return await _regulationRepository.DeleteMultipleAsync(maQDList);
+        }
     }
 }

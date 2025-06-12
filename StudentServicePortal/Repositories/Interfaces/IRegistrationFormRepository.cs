@@ -12,5 +12,8 @@ namespace StudentServicePortal.Repositories.Interfaces
         Task<RegistrationForm> GetByFormIdAsync(string maDon);
 
         Task<IEnumerable<RegistrationForm>> GetPendingFormsAsync();
+        Task<IEnumerable<RegistrationForm>> GetFormsByDepartmentAsync(string maPB);
+        Task<IEnumerable<RegistrationForm>> GetPendingFormsByDepartmentAsync(string maPB);
+        Task<bool> DeleteFormAsync(string maDon);
     }
 }

@@ -18,15 +18,17 @@ namespace StudentServicePortal.Repositories
 
         private const string GET_ALL_FORMS = @"
         SELECT
-            MaDon             AS MaDon,
-            MaPB              AS MaPB,
-            TenDon            AS TenDon,
-            MaCB              AS MaCB,
-            MaQL              AS MaQL,
-            ThongTinChiTiet   AS ThongTinChiTiet,
-            ThoiGianDang      AS ThoiGianDang,
-            TrangThai         AS TrangThai
-        FROM [dbo].[DON_DANG_KY]";
+            ddk.MaDon             AS MaDon,
+            ddk.MaPB              AS MaPB,
+            ddk.TenDon            AS TenDon,
+            ddk.MaCB              AS MaCB,
+            ddk.MaQL              AS MaQL,
+            ddk.ThongTinChiTiet   AS ThongTinChiTiet,
+            ddk.ThoiGianDang      AS ThoiGianDang,
+            ddk.TrangThai         AS TrangThai,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB";
         private const string GET_FORM_BY_ID = @"
         SELECT 
             MaDonCT, MaDon, MaSV, HocKyHienTai, 
@@ -34,9 +36,12 @@ namespace StudentServicePortal.Repositories
         FROM [dbo].[DON_DANG_KY_CHI_TIET] 
         WHERE MaDon = @MaDon";
         private const string GET_FORM_ID = @"
-        SELECT *
-        FROM [dbo].[DON_DANG_KY] 
-        WHERE MaDon = @MaDon";
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaDon = @MaDon";
         private const string INSERT_FORM = @"
         INSERT INTO [dbo].[DON_DANG_KY] (
             MaDon, MaPB, TenDon, MaCB, MaQL, 
@@ -68,11 +73,48 @@ namespace StudentServicePortal.Repositories
             return await _dbConnection.QueryFirstOrDefaultAsync<RegistrationDetail>(GET_FORM_BY_ID, parameters);
         }
         private const string GET_PENDING_FORMS = @"
-            SELECT * FROM DON_DANG_KY
-            WHERE TrangThai = 1";
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.TrangThai = 1";
+        
+        private const string GET_FORMS_BY_DEPARTMENT = @"
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaPB = @MaPB
+        ORDER BY ddk.ThoiGianDang DESC";
+        
+        private const string GET_PENDING_FORMS_BY_DEPARTMENT = @"
+        SELECT 
+            ddk.*,
+            pb.TenPB              AS TenPB
+        FROM [dbo].[DON_DANG_KY] ddk
+        LEFT JOIN [dbo].[PHONG_BAN] pb ON ddk.MaPB = pb.MaPB
+        WHERE ddk.MaPB = @MaPB AND ddk.TrangThai = 1
+        ORDER BY ddk.ThoiGianDang DESC";
+        
         public async Task<IEnumerable<RegistrationForm>> GetPendingFormsAsync()
         {
             return await _dbConnection.QueryAsync<RegistrationForm>(GET_PENDING_FORMS);
+        }
+
+        public async Task<IEnumerable<RegistrationForm>> GetFormsByDepartmentAsync(string maPB)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaPB", maPB);
+            return await _dbConnection.QueryAsync<RegistrationForm>(GET_FORMS_BY_DEPARTMENT, parameters);
+        }
+
+        public async Task<IEnumerable<RegistrationForm>> GetPendingFormsByDepartmentAsync(string maPB)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaPB", maPB);
+            return await _dbConnection.QueryAsync<RegistrationForm>(GET_PENDING_FORMS_BY_DEPARTMENT, parameters);
         }
 
         public async Task<RegistrationForm> GetByFormIdAsync(string maDon)
@@ -81,6 +123,19 @@ namespace StudentServicePortal.Repositories
             parameters.Add("@MaDon", maDon);
 
             return await _dbConnection.QueryFirstOrDefaultAsync<RegistrationForm>(GET_FORM_ID, parameters);
+        }
+
+        private const string DELETE_FORM = @"
+        DELETE FROM [dbo].[DON_DANG_KY] 
+        WHERE MaDon = @MaDon";
+
+        public async Task<bool> DeleteFormAsync(string maDon)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@MaDon", maDon);
+
+            var affectedRows = await _dbConnection.ExecuteAsync(DELETE_FORM, parameters);
+            return affectedRows > 0;
         }
     }
 }

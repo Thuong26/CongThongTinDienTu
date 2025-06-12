@@ -10,5 +10,7 @@ namespace StudentServicePortal.Repositories
         Task<Form?> GetFormById(string maBM);
         Task<bool> CreateFormAsync(Form form);
         Task<bool> UpdateAsync(string maBM, Form form);
+        Task<bool> DeleteFormAsync(string maBM);
+        Task<bool> DeleteMultipleFormsAsync(IEnumerable<string> maBMList);
     }
 }

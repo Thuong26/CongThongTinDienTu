@@ -36,5 +36,8 @@ namespace StudentServicePortal.Models
 
         [Column("TrangThai")]
         public bool TrangThai { get; set; }  // Trạng thái (1: Đang xử lý, 0: Hoàn thành)
+
+        [NotMapped]
+        public string TenPB { get; set; }  // Tên phòng ban
     }
 }
